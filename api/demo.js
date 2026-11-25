@@ -70,11 +70,14 @@ export default endpoint(async (req, res) => {
       email_confirm: true,
       app_metadata: { champus_demo: { run: id, role: kind } },
     });
-    if (result.error && !(await members()).some((p) => p.workspace === kind))
+    if (result.error && !(await members()).some((p) => p.workspace === kind)) {
+      const code = String(result.error.code || result.error.status || "unavailable").replace(/[^a-z0-9_]/gi, "").slice(0, 64);
+      console.error("Demo account provisioning failed", { role: kind, code });
       throw problem(
         503,
-        "Sample accounts could not be prepared. Please retry.",
+        `Sample accounts could not be prepared (${kind}, ${code}).`,
       );
+    }
   }
   checked(await db.rpc("seed_demo", { run_id: id }));
   const account = (await members()).find(
