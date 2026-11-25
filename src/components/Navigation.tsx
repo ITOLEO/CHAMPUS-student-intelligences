@@ -5,6 +5,10 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   ChevronDown,
+  BriefcaseBusiness,
+  GraduationCap,
+  BookOpen,
+  SunMoon,
   CircleHelp,
   LayoutDashboard,
   LogOut,
@@ -21,11 +25,31 @@ import { useStore, useBusy } from "../data/store";
 import { safeWebUrl } from "../data/model";
 import { featureGroups, featurePath } from "./features";
 
-export function Brand({ to = "/" }: { to?: string }) {
+export function Brand({
+  to = "/",
+  compact = false,
+}: {
+  to?: string;
+  compact?: boolean;
+}) {
+  const { pathname } = useLocation();
   return (
     <Link
       className="brand"
       to={to}
+      onClick={(event) => {
+        if (
+          to === "/" &&
+          pathname === "/" &&
+          !event.ctrlKey &&
+          !event.metaKey &&
+          !event.shiftKey &&
+          !event.altKey
+        ) {
+          event.preventDefault();
+          window.scrollTo(0, 0);
+        }
+      }}
       aria-label={
         to === "/overview"
           ? "CHAMPUS dashboard"
@@ -35,7 +59,7 @@ export function Brand({ to = "/" }: { to?: string }) {
       }
     >
       <img src="/champus.svg" alt="" width="35" height="35" />
-      CHAMPUS
+      {!compact && "CHAMPUS"}
     </Link>
   );
 }
@@ -68,7 +92,7 @@ export function Avatar() {
   );
 }
 
-type Popup = "features" | "account" | "help" | "search";
+type Popup = "features" | "account" | "help" | "search" | "theme";
 function LocalClock() {
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
@@ -119,6 +143,17 @@ export function Header() {
     : roles.includes("industry")
       ? "Industry partner"
       : "Student";
+  const workspaceRole =
+    location.pathname === "/industry" && roles.includes("industry")
+      ? "Industry partner"
+      : role;
+  const RoleIcon =
+    workspaceRole === "Industry partner"
+      ? BriefcaseBusiness
+      : workspaceRole === "Teacher"
+        ? GraduationCap
+        : BookOpen;
+  const theme = useRef<HTMLButtonElement>(null);
   const [popup, setPopup] = useState<Popup | null>(null);
   const [query, setQuery] = useState("");
   const search = useRef<HTMLInputElement>(null);
@@ -147,7 +182,13 @@ export function Header() {
         else setPopup("search");
       }
       if (event.key === "Escape" && popup) {
-        const buttons = { features, account, help, search: searchButton };
+        const buttons = {
+          features,
+          account,
+          help,
+          theme,
+          search: searchButton,
+        };
         buttons[popup].current?.focus();
         setPopup(null);
       }
@@ -166,10 +207,11 @@ export function Header() {
   return (
     <header
       ref={header}
-      className={workspace ? "global workspace-header" : "global"}
+      className={workspace ? "global workspace-header" : "global public-header"}
     >
       <div className="bar">
         <Brand
+          compact
           to={user ? "/overview" : location.pathname === "/" ? "/" : "/sign-in"}
         />
         {!workspace && (
@@ -226,6 +268,14 @@ export function Header() {
                 hidden={!isFeaturesOpen}
               >
                 <div className="features-inner">
+                  <div className="mobile-destinations">
+                    <Link replace={atIntroduction} to="/opportunities">
+                      Opportunities
+                    </Link>
+                    <Link replace={atIntroduction} to="/learning">
+                      Learning library
+                    </Link>
+                  </div>
                   {featureGroups.map((group) => (
                     <section className="feature-column" key={group.title}>
                       <h2>{group.title}</h2>
@@ -269,7 +319,20 @@ export function Header() {
             </Link>
           </nav>
         )}
-        {workspace && <span className="workspace-header-label">Workspace</span>}
+        {workspace && (
+          <span className="workspace-header-label">
+            <span aria-hidden="true" className="context-divider">
+              /
+            </span>
+            <RoleIcon size={17} aria-hidden="true" />
+            <span>
+              {workspaceRole === "Industry partner"
+                ? "Industry"
+                : workspaceRole}{" "}
+              workspace
+            </span>
+          </span>
+        )}
         <div className="nav-actions">
           {workspace ? (
             <LocalClock />
@@ -298,6 +361,25 @@ export function Header() {
             <span>Search</span>
             <kbd>Ctrl K</kbd>
           </button>
+          {!workspace && (
+            <button
+              ref={theme}
+              type="button"
+              className="icon-btn nav-utility"
+              aria-label="Appearance"
+              title="Appearance"
+              aria-expanded={popup === "theme"}
+              aria-controls="public-appearance"
+              onClick={() => toggle("theme")}
+            >
+              <SunMoon size={18} />
+            </button>
+          )}
+          {popup === "theme" && !workspace && (
+            <div className="header-popup" id="public-appearance">
+              <ThemeChoices />
+            </div>
+          )}
           <button
             ref={help}
             type="button"

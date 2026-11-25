@@ -1,16 +1,15 @@
 import { featureGroups, featurePath } from "../components/features";
-import { PageSurface } from "../components/Layout";
 import { illustration } from "../data/assets";
 import { useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
-  ArrowRight,
+  ListChecks,
   GraduationCap,
   Search,
   SlidersHorizontal,
 } from "lucide-react";
-import { Card, CatalogState, Empty, Notice } from "../components/Layout";
-import { useStore, useBusy } from "../data/store";
+import { Card, CatalogState, Empty, PageSurface } from "../components/Layout";
+import { useStore } from "../data/store";
 import { emptyProfile } from "../data/model";
 import { isClosed, recommended } from "../recommendation/recommendationEngine";
 
@@ -44,6 +43,65 @@ function CategoryFilters({
     </div>
   );
 }
+// The guide uses the same instructions as each feature's public detail page.
+const guideFeatures = featureGroups.flatMap((group) =>
+  group.features.filter((feature) =>
+    ["industry-needs", "course-practice", "learning-plan"].includes(feature.id),
+  ),
+);
+
+function WorkflowGuide() {
+  const [selected, setSelected] = useState(guideFeatures[0]);
+  const Icon = selected.icon;
+  return (
+    <section className="guide-section wrap" aria-labelledby="guide-title">
+      <h2 id="guide-title">How it works</h2>
+      <div className="workflow-guide">
+        <div
+          className="guide-choices"
+          role="group"
+          aria-label="Choose a feature"
+        >
+          {guideFeatures.map((feature) => {
+            const FeatureIcon = feature.icon;
+            return (
+              <button
+                type="button"
+                key={feature.id}
+                aria-pressed={selected.id === feature.id}
+                aria-controls="guide-panel"
+                onClick={() => setSelected(feature)}
+              >
+                <FeatureIcon size={20} />
+                {feature.title}
+              </button>
+            );
+          })}
+        </div>
+        <div id="guide-panel" className="guide-panel" aria-live="polite">
+          <div className="guide-panel-heading">
+            <Icon size={24} />
+            <h3>{selected.title}</h3>
+          </div>
+          <p>{selected.description}</p>
+          <ol>
+            {selected.steps.map((step) => (
+              <li key={step}>{step}</li>
+            ))}
+          </ol>
+          <Link
+            replace
+            className="feature-action"
+            to={featurePath(selected.id)}
+          >
+            <ListChecks size={17} /> Explore {selected.title}
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export function Landing() {
   const s = useStore(),
     [category, setCategory] = useState("All");
@@ -52,60 +110,64 @@ export function Landing() {
     .filter((x) => category === "All" || x.data.category === category)
     .slice(0, 3);
   return (
-    <main id="main">
-      <section className="landing-hero">
+    <main id="main" className="landing-page">
+      <section className="landing-hero" aria-labelledby="landing-title">
         <img
           src={illustration("venture-workshop")}
           alt="Students work together on a project in a workshop."
           fetchPriority="high"
+          width={1120}
+          height={747}
         />
         <div className="wrap landing-hero-content">
-          <div className="hero-copy">
-            <p className="overline">Agile curriculum platform</p>
-            <h1>
-              From learning
-              <br />
-              <em>to opportunity.</em>
-            </h1>
-            <p>
-              Turn industry needs into course practice. Build evidence of what
-              students can do.
-            </p>
-            <div className="hero-buttons">
-              <Link replace className="btn primary" to="/sign-in">
-                <GraduationCap size={18} /> Sign in to your workspace
-              </Link>
-              <Link replace className="btn secondary" to="/opportunities">
-                Explore opportunities
-              </Link>
-            </div>
+          <p className="overline">Agile curriculum platform</p>
+          <h1 id="landing-title">
+            From learning
+            <br />
+            <em>to opportunity.</em>
+          </h1>
+          <p className="landing-lede">
+            Turn industry needs into course practice. Build evidence of what
+            students can do.
+          </p>
+          <div className="hero-buttons">
+            <Link replace className="btn primary" to="/sign-in">
+              <GraduationCap size={18} /> Sign in to your workspace
+            </Link>
+            <Link replace className="view-all" to="/opportunities">
+              Explore opportunities
+            </Link>
           </div>
         </div>
       </section>
       <section id="how-it-works" className="wrap landing-story">
         <div className="landing-statement">
-          <h2>What students learn should connect to what they do.</h2>
-          <p>
-            Partners describe changes in the workplace. Teachers connect those
-            needs to course outcomes. Students practise, submit evidence, and
-            learn from feedback.
-          </p>
+          <div>
+            <h2>What students learn should connect to what they do.</h2>
+            <p>
+              Partners describe changes in the workplace. Teachers connect those
+              needs to course outcomes. Students practise, submit evidence, and
+              learn from feedback.
+            </p>
+          </div>
+          <nav className="workspace-index" aria-label="Explore workspaces">
+            {featureGroups.map(({ id, title, features }) => {
+              const Icon = features[0].icon;
+              return (
+                <Link key={id} replace to={featurePath(features[0].id)}>
+                  <Icon size={23} />
+                  {title}
+                </Link>
+              );
+            })}
+          </nav>
         </div>
         <div className="landing-workflow">
           {featureGroups.map((group) => {
-            const primary = group.features[0];
+            const [primary, ...related] = group.features;
             const Icon = primary.icon;
             return (
               <article className="landing-chapter" key={group.id}>
-                <img
-                  src={illustration(
-                    group.image === "venture-workshop"
-                      ? "food-photography"
-                      : group.image,
-                  )}
-                  alt=""
-                  loading="lazy"
-                />
                 <div className="landing-chapter-content">
                   <p className="overline">
                     <Icon size={17} /> {group.title}
@@ -118,10 +180,9 @@ export function Landing() {
                     to={featurePath(primary.id)}
                   >
                     Explore {primary.title}
-                    <ArrowRight size={16} />
                   </Link>
                   <div className="chapter-links">
-                    {group.features.slice(1).map((feature) => (
+                    {related.map((feature) => (
                       <Link
                         replace
                         key={feature.id}
@@ -132,11 +193,23 @@ export function Landing() {
                     ))}
                   </div>
                 </div>
+                <img
+                  src={illustration(
+                    group.image === "venture-workshop"
+                      ? "food-photography"
+                      : group.image,
+                  )}
+                  alt=""
+                  loading="lazy"
+                  width={960}
+                  height={640}
+                />
               </article>
             );
           })}
         </div>
       </section>
+      <WorkflowGuide />
       <section className="explore-band">
         <div className="wrap">
           <div className="section-head">

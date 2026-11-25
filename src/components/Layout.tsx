@@ -1,3 +1,4 @@
+import { featureGroups, featurePath } from "./features";
 import { railModes } from "./Appearance";
 import { useAppearance, saveSetting } from "../data/appearance";
 import { illustration } from "../data/assets";
@@ -5,6 +6,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, NavLink, Navigate, useLocation } from "react-router-dom";
 import {
   BookOpen,
+  ChevronUp,
   Settings,
   Building2,
   BookmarkCheck,
@@ -30,6 +32,37 @@ export function Footer() {
   const onIntroduction = useLocation().pathname === "/";
   return (
     <footer>
+      {onIntroduction && (
+        <nav className="landing-directory wrap" aria-label="Feature directory">
+          {featureGroups.map((group) => (
+            <div key={group.id}>
+              <h2>{group.title}</h2>
+              <ul>
+                {group.features.map((feature) => (
+                  <li key={feature.id}>
+                    <Link replace to={featurePath(feature.id)}>
+                      {feature.title}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+          <button
+            type="button"
+            className="btn secondary back-to-top"
+            onClick={() => {
+              document
+                .querySelector<HTMLAnchorElement>("header .brand")
+                ?.focus({ preventScroll: true });
+              window.scrollTo(0, 0);
+            }}
+          >
+            <ChevronUp size={16} />
+            Back to top
+          </button>
+        </nav>
+      )}
       <div className="footer-inner">
         <Brand to={user ? "/overview" : "/sign-in"} />
         <span>From learning to opportunity.</span>
@@ -155,6 +188,31 @@ export function Workspace({ children }: { children: ReactNode }) {
   const [railMenu, setRailMenu] = useState(false);
   const controls = useRef<HTMLDivElement>(null);
   const railButton = useRef<HTMLButtonElement>(null);
+  const mobileButton = useRef<HTMLButtonElement>(null);
+  const sidebar = useRef<HTMLElement>(null);
+  useEffect(() => {
+    setRailMenu(false);
+    setMobileOpen(false);
+  }, [location.key]);
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const dismiss = (event: PointerEvent) => {
+      if (!sidebar.current?.contains(event.target as Node))
+        setMobileOpen(false);
+    };
+    const escape = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !railMenu) {
+        setMobileOpen(false);
+        mobileButton.current?.focus();
+      }
+    };
+    window.addEventListener("pointerdown", dismiss);
+    window.addEventListener("keydown", escape);
+    return () => {
+      window.removeEventListener("pointerdown", dismiss);
+      window.removeEventListener("keydown", escape);
+    };
+  }, [mobileOpen, railMenu]);
   useEffect(() => {
     if (!railMenu) return;
     const dismiss = (e: PointerEvent) => {
@@ -175,10 +233,11 @@ export function Workspace({ children }: { children: ReactNode }) {
   }, [railMenu]);
   return (
     <div className={"work-shell rail-" + rail}>
-      <aside className="side">
+      <aside className="side" ref={sidebar}>
         <div className="rail-mobile">
           <button
             type="button"
+            ref={mobileButton}
             className="btn secondary"
             aria-expanded={mobileOpen}
             aria-controls="workspace-nav"

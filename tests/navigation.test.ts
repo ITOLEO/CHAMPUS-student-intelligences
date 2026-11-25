@@ -45,6 +45,46 @@ test("the root opens the public landing and links to account access and discover
   assert.ok(doc.querySelector('main a[href="/sign-in"]'));
   assert.ok(doc.querySelector('main a[href="/opportunities"]'));
 });
+test("exploring the introduction keeps the visit active and opens the selected workflow", async () => {
+  const brand = doc.querySelector<HTMLAnchorElement>("header .brand")!;
+  await act(async () => brand.click());
+  assert.equal(dom.window.location.pathname, "/");
+  const choices = doc.querySelector('[aria-label="Choose a feature"]')!;
+  for (const button of choices.querySelectorAll("button")) {
+    await act(async () => button.click());
+    assert.equal(choices.querySelectorAll('[aria-pressed="true"]').length, 1);
+    const panel = doc.getElementById("guide-panel")!;
+    assert.equal(panel.querySelector("h3")?.textContent, button.textContent);
+    assert.equal(panel.querySelectorAll("ol li").length, 3);
+    assert.ok(
+      doc.querySelector(
+        'footer a[href="' +
+          panel.querySelector("a")?.getAttribute("href") +
+          '"]',
+      ),
+    );
+  }
+  assert.equal(
+    doc.querySelectorAll('.landing-directory a[href^="/features/"]').length,
+    9,
+  );
+  const appearance = doc.querySelector<HTMLButtonElement>(
+    'button[aria-label="Appearance"]',
+  )!;
+  await act(async () => appearance.click());
+  const themes = [
+    ...doc.querySelectorAll<HTMLButtonElement>("#public-appearance button"),
+  ];
+  await act(async () =>
+    themes.find((button) => button.textContent?.includes("Dark"))!.click(),
+  );
+  assert.equal(doc.documentElement.dataset.theme, "dark");
+  await act(async () =>
+    themes.find((button) => button.textContent?.includes("Light"))!.click(),
+  );
+  await act(async () => appearance.click());
+  assert.equal(dom.window.location.pathname, "/");
+});
 test("the catalog opens query filters, recovers from no results and links to a detail", async () => {
   await go("/opportunities?q=zzzz");
   assert.match(body(), /No matches/);
