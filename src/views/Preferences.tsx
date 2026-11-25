@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useStore } from "../data/store";
-import { Monitor, UserRound } from "lucide-react";
+import { Monitor, Search, UserRound } from "lucide-react";
 export function setting(key: string, fallback: string) {
   try {
     return window.localStorage.getItem("champus.ui." + key) || fallback;
@@ -27,7 +27,7 @@ export function useAppearance() {
     };
   }, []);
   useEffect(() => {
-    const choice = setting("theme", "system"),
+    const choice = setting("theme", "light"),
       media = window.matchMedia?.("(prefers-color-scheme: dark)");
     const apply = () => {
       document.documentElement.dataset.theme =
@@ -51,10 +51,10 @@ export function Settings() {
         <label>
           Color theme
           <select
-            value={setting("theme", "system")}
+            value={setting("theme", "light")}
             onChange={(e) => saveSetting("theme", e.target.value)}
           >
-            {["system", "light", "dark"].map((v) => (
+            {["light", "dark", "system"].map((v) => (
               <option key={v} value={v}>
                 {v[0].toUpperCase() + v.slice(1)}
               </option>
@@ -90,18 +90,27 @@ export function WorkspaceSearch() {
     q = params.get("q") || "",
     s = useStore();
   const links = [
-    ["My learning plan", "/plan"],
-    ["My profile", "/profile"],
-    ["Settings", "/settings"],
+    ...(s.user
+      ? [
+          ["My profile", "/profile"],
+          ["Settings", "/settings"],
+        ]
+      : []),
+    ...(s.user && !s.roles.includes("teacher") && !s.roles.includes("industry")
+      ? [["My learning plan", "/plan"]]
+      : []),
     ...(s.roles.includes("teacher") ? [["Teaching studio", "/teacher"]] : []),
     ...(s.roles.includes("industry") ? [["Industry desk", "/industry"]] : []),
     ...Object.values(s.skills).map((k) => [k.title, "/learning/" + k.id]),
     ...s.listings.map((r) => [r.data.title, "/opportunities/" + r.id]),
   ].filter(([name]) => name.toLowerCase().includes(q.trim().toLowerCase()));
-  return (
+  const content = (
     <>
-      <h1 className="page-title">Workspace search</h1>
+      <h1 className="page-title">
+        {s.user ? "Workspace search" : "Search CHAMPUS"}
+      </h1>
       <label className="search">
+        <Search size={17} />
         <input
           aria-label="Search pages, skills and opportunities"
           type="search"
@@ -122,5 +131,12 @@ export function WorkspaceSearch() {
         )}
       </div>
     </>
+  );
+  return s.user ? (
+    content
+  ) : (
+    <main className="wrap section" id="main">
+      {content}
+    </main>
   );
 }

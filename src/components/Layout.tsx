@@ -1,12 +1,13 @@
 import { useAppearance, saveSetting } from "../views/Preferences";
 import { illustration } from "../data/assets";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Link, NavLink, Navigate, useLocation } from "react-router-dom";
 import {
   BookOpen,
-  Search,
   Settings,
   Building2,
+  BookmarkCheck,
+  ExternalLink,
   PanelLeft,
   ListChecks,
   Bookmark,
@@ -15,101 +16,23 @@ import {
   Compass,
   GraduationCap,
   LayoutDashboard,
-  LogIn,
   LogOut,
-  Menu,
   ShieldCheck,
   UserRound,
-  X,
 } from "lucide-react";
 import { useStore, useBusy } from "../data/store";
 import { requireDb, check } from "../data/client";
 import { deadlineText } from "../recommendation/recommendationEngine";
 import { picture, type Listing } from "../data/model";
 
-export function Brand() {
-  return (
-    <Link className="brand" to="/" aria-label="CHAMPUS home">
-      <img src="/champus.svg" alt="" width="37" height="37" />
-      CHAMPUS
-    </Link>
-  );
-}
-export function Header() {
-  const { user } = useStore();
-  const [open, setOpen] = useState(false);
-  const loc = useLocation(),
-    btn = useRef<HTMLButtonElement>(null);
-  useEffect(() => {
-    setOpen(false);
-  }, [loc.pathname, loc.hash]);
-  useEffect(() => {
-    if (!open) return;
-    const close = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setOpen(false);
-        btn.current?.focus();
-      }
-    };
-    window.addEventListener("keydown", close);
-    return () => window.removeEventListener("keydown", close);
-  }, [open]);
-  return (
-    <header className="global">
-      <div className="bar">
-        <Brand />
-        <nav
-          aria-label="Main navigation"
-          className={open ? "main-nav opened" : "main-nav"}
-        >
-          <NavLink to="/opportunities">Opportunities</NavLink>
-          <NavLink to="/learning">Learning library</NavLink>
-          <Link to="/#how-it-works">How it works</Link>
-        </nav>
-        <div className="nav-actions">
-          {user && (
-            <Link
-              to="/search"
-              aria-label="Search workspace"
-              title="Search workspace"
-              className="icon-btn"
-            >
-              <Search size={17} />
-            </Link>
-          )}
-          {user && (
-            <Link
-              to="/settings"
-              aria-label="Website settings"
-              title="Website settings"
-              className="icon-btn"
-            >
-              <Settings size={17} />
-            </Link>
-          )}
-          <Link className="btn nav-login" to={user ? "/overview" : "/sign-in"}>
-            {user ? <LayoutDashboard size={16} /> : <LogIn size={16} />}{" "}
-            {user ? "Dashboard" : "Sign in"}
-          </Link>
-          <button
-            aria-label={open ? "Close menu" : "Open menu"}
-            aria-expanded={open}
-            className="mobile-menu icon-btn"
-            ref={btn}
-            onClick={() => setOpen(!open)}
-          >
-            {open ? <X /> : <Menu />}
-          </button>
-        </div>
-      </div>
-    </header>
-  );
-}
+import { Avatar, Brand } from "./Navigation";
+
 export function Footer() {
+  const { user } = useStore();
   return (
     <footer>
       <div className="footer-inner">
-        <Brand />
+        <Brand to={user ? "/overview" : "/"} />
         <span>From learning to opportunity.</span>
         <Link to="/opportunities">Opportunities</Link>
         <Link to="/learning">Learning library</Link>
@@ -164,7 +87,7 @@ export function Guard({ children }: { children: ReactNode }) {
   const loc = useLocation();
   if (s.authLoading)
     return (
-      <main className="wrap section">
+      <main id="main" className="wrap section">
         <Notice>Checking your session…</Notice>
       </main>
     );
@@ -177,7 +100,7 @@ export function Guard({ children }: { children: ReactNode }) {
     );
   if (s.accountError)
     return (
-      <main className="wrap section">
+      <main id="main" className="wrap section">
         <Empty
           title="Workspace unavailable"
           text={s.accountError}
@@ -191,7 +114,7 @@ export function Guard({ children }: { children: ReactNode }) {
     );
   if (s.accountLoading)
     return (
-      <main className="wrap section">
+      <main id="main" className="wrap section">
         <Notice>Loading your workspace…</Notice>
       </main>
     );
@@ -201,64 +124,155 @@ export function Workspace({ children }: { children: ReactNode }) {
   const s = useStore();
   const job = useBusy();
   const rail = useAppearance();
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const teacher = s.roles.includes("teacher");
+  const industry = s.roles.includes("industry");
+  const reviewer = s.roles.some(
+    (role) => role === "reviewer" || role === "curator",
+  );
+  const home = teacher ? "/teacher" : industry ? "/industry" : "/overview";
+  const links: [string, string, typeof BookOpen][] = [
+    [
+      home,
+      teacher ? "Teaching studio" : industry ? "Industry desk" : "Overview",
+      LayoutDashboard,
+    ],
+  ];
+  if (teacher || reviewer)
+    links.push(["/staff", "Review and curation", ShieldCheck]);
+  if (teacher && industry)
+    links.push(["/industry", "Industry desk", Building2]);
+  if (!teacher && !industry)
+    links.push(
+      ["/plan", "Learning plan", ListChecks],
+      ["/skills", "Skill development", BookOpen],
+      ["/opportunities", "Opportunities", Compass],
+      ["/opportunities?saved=1", "Saved opportunities", BookmarkCheck],
+    );
+  const location = useLocation();
   return (
     <div className={"work-shell rail-" + rail}>
       <aside className="side">
-        <button
-          className="text-btn rail-control"
-          title="Change navigation width"
-          aria-label="Change navigation width"
-          onClick={() =>
-            saveSetting("rail", rail === "expanded" ? "collapsed" : "expanded")
-          }
+        <div className="rail-mobile">
+          <button
+            type="button"
+            className="btn secondary"
+            aria-expanded={mobileOpen}
+            aria-controls="workspace-nav"
+            onClick={() => setMobileOpen(!mobileOpen)}
+          >
+            <PanelLeft size={17} /> Workspace navigation
+          </button>
+        </div>
+        <div
+          id="workspace-nav"
+          className={mobileOpen ? "rail-content mobile-open" : "rail-content"}
         >
-          <PanelLeft />
-          <span>Workspace</span>
-        </button>
-        <nav aria-label="Student workspace">
-          {(
-            [
-              ["/overview", "Overview", LayoutDashboard],
-              ["/plan", "Learning plan", ListChecks],
-              ["/profile", "My profile", UserRound],
-              ["/skills", "Skill development", BookOpen],
-              ["/opportunities", "Opportunities", Compass],
-              ...(s.roles.includes("teacher")
-                ? [["/teacher", "Teaching studio", GraduationCap]]
-                : []),
-              ...(s.roles.includes("industry")
-                ? [["/industry", "Industry desk", Building2]]
-                : []),
-              ...(s.roles.some((r) =>
-                ["curator", "teacher", "reviewer"].includes(r),
-              )
-                ? [["/staff", "Review and curation", ShieldCheck]]
-                : []),
-              ["/search", "Search", Search],
-              ["/settings", "Settings", Settings],
-            ] as [string, string, typeof BookOpen][]
-          ).map(([to, label, Icon]) => (
-            <NavLink key={to} to={to} aria-label={label} title={label}>
-              <Icon />
-              <span>{label}</span>
+          <div className="rail-heading">
+            <Avatar />
+            <div>
+              <strong>{s.profile.name || "My workspace"}</strong>
+              <small>
+                {teacher ? "Teaching" : industry ? "Industry" : "Student"}
+              </small>
+            </div>
+          </div>
+          <nav aria-label="Workspace navigation">
+            {links.map(([to, label, Icon]) => {
+              const isSaved = to.includes("?");
+              const selected = isSaved
+                ? location.pathname === "/opportunities" &&
+                  new URLSearchParams(location.search).get("saved") === "1"
+                : to === "/opportunities"
+                  ? location.pathname.startsWith(to) &&
+                    new URLSearchParams(location.search).get("saved") !== "1"
+                  : location.pathname === to;
+              return (
+                <Link
+                  key={to}
+                  to={to}
+                  aria-label={label}
+                  aria-current={selected ? "page" : undefined}
+                  className={selected ? "active" : undefined}
+                  title={label}
+                  onClick={() => setMobileOpen(false)}
+                >
+                  <Icon />
+                  <span>{label}</span>
+                </Link>
+              );
+            })}
+          </nav>
+          <nav className="rail-bottom" aria-label="Account navigation">
+            <NavLink
+              to="/profile"
+              title="My profile"
+              aria-label="My profile"
+              onClick={() => setMobileOpen(false)}
+            >
+              <UserRound />
+              <span>My profile</span>
             </NavLink>
-          ))}
-        </nav>
-        <button
-          aria-label="Sign out"
-          title="Sign out"
-          className="text-btn signout"
-          onClick={() =>
-            job.run(async () => {
-              const { error } = await requireDb().auth.signOut();
-              if (error) throw error;
-            })
-          }
-        >
-          <LogOut size={17} />
-          <span>Sign out</span>
-        </button>
-        {job.message && <Notice>{job.message}</Notice>}
+            <NavLink
+              to="/settings"
+              title="Settings"
+              aria-label="Settings"
+              onClick={() => setMobileOpen(false)}
+            >
+              <Settings />
+              <span>Settings</span>
+            </NavLink>
+            <NavLink
+              to="/welcome"
+              title="View landing page"
+              aria-label="View landing page"
+            >
+              <ExternalLink />
+              <span>View landing page</span>
+            </NavLink>
+            <button
+              aria-label="Sign out"
+              title="Sign out"
+              className="text-btn signout"
+              disabled={job.busy}
+              onClick={() =>
+                job.run(async () => {
+                  const { error } = await requireDb().auth.signOut();
+                  if (error) throw error;
+                })
+              }
+            >
+              <LogOut size={17} />
+              <span>Sign out</span>
+            </button>
+            {job.message && <Notice>{job.message}</Notice>}
+            <button
+              type="button"
+              className="text-btn rail-control"
+              aria-label={
+                rail === "expanded"
+                  ? "Collapse navigation"
+                  : "Expand navigation"
+              }
+              title={
+                rail === "expanded"
+                  ? "Collapse navigation"
+                  : "Expand navigation"
+              }
+              onClick={() =>
+                saveSetting(
+                  "rail",
+                  rail === "expanded" ? "collapsed" : "expanded",
+                )
+              }
+            >
+              <PanelLeft />
+              <span>
+                {rail === "expanded" ? "Collapse sidebar" : "Expand sidebar"}
+              </span>
+            </button>
+          </nav>
+        </div>
       </aside>
       <main id="main" className="work-main">
         {children}
@@ -347,5 +361,21 @@ export function Card({ row }: { row: Listing }) {
         </div>
       </div>
     </article>
+  );
+}
+
+export function PageSurface({
+  workspace,
+  children,
+}: {
+  workspace: boolean;
+  children: ReactNode;
+}) {
+  return workspace ? (
+    <>{children}</>
+  ) : (
+    <main id="main" className="wrap section">
+      {children}
+    </main>
   );
 }

@@ -1,3 +1,4 @@
+import { PageSurface } from "../components/Layout";
 import { illustration } from "../data/assets";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
@@ -57,18 +58,16 @@ function EntryRules({ row }: { row: Listing }) {
       return;
     }
     check(
-      await requireDb()
-        .from("confirmations")
-        .upsert(
-          {
-            user_id: s.user.id,
-            opportunity_id: row.id,
-            revision: row.revision,
-            rule_id: id,
-            answer: v,
-          },
-          { onConflict: "user_id,opportunity_id,revision,rule_id" },
-        ),
+      await requireDb().from("confirmations").upsert(
+        {
+          user_id: s.user.id,
+          opportunity_id: row.id,
+          revision: row.revision,
+          rule_id: id,
+          answer: v,
+        },
+        { onConflict: "user_id,opportunity_id,revision,rule_id" },
+      ),
     );
     s.refresh();
   }
@@ -110,7 +109,7 @@ function EntryRules({ row }: { row: Listing }) {
     </section>
   );
 }
-export function Detail() {
+export function Detail({ workspace = false }: { workspace?: boolean }) {
   const s = useStore();
   const { id = "" } = useParams();
   const row = s.listings.find((r) => r.id === id);
@@ -119,13 +118,13 @@ export function Detail() {
   }, [row]);
   if (s.catalogLoading || s.catalogError)
     return (
-      <main id="main" className="wrap section">
+      <PageSurface workspace={workspace}>
         <CatalogState />
-      </main>
+      </PageSurface>
     );
   if (!row)
     return (
-      <main id="main" className="wrap section">
+      <PageSurface workspace={workspace}>
         <Empty
           title="Opportunity unavailable"
           text="This listing may have been withdrawn."
@@ -135,7 +134,7 @@ export function Detail() {
             </Link>
           }
         />
-      </main>
+      </PageSurface>
     );
   const o = row.data,
     closed = isClosed(o.deadline),
@@ -143,7 +142,7 @@ export function Detail() {
     next = nextPractice(o.skills, s.evidence, s.reflections),
     photo = picture(o.id);
   return (
-    <main id="main" className="wrap section">
+    <PageSurface workspace={workspace}>
       <Link className="back" to="/opportunities">
         <ChevronLeft size={16} />
         Opportunities
@@ -288,7 +287,7 @@ export function Detail() {
           </div>
         </aside>
       </div>
-    </main>
+    </PageSurface>
   );
 }
 function GraduationIcon() {

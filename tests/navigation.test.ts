@@ -107,15 +107,19 @@ test("private navigation sends visitors to sign in and an unavailable account se
   assert.match(body(), /Account access is unavailable/);
   assert.equal(doc.querySelector('input[type="password"]'), null);
 });
-test("the mobile menu supports Escape and an invalid route has a recovery link", async () => {
+test("the Features disclosure supports Escape and an invalid route has a recovery link", async () => {
   await go("/missing");
   assert.match(body(), /Page not found/);
-  assert.ok(doc.querySelector('main a[href="/opportunities"]'));
+  assert.ok(doc.querySelector('main a[href="/"]'));
   const button = doc.querySelector<HTMLButtonElement>(
-    'button[aria-label="Open menu"]',
+    'button[aria-label="Features"]',
   )!;
   await act(async () => button.click());
   assert.equal(button.getAttribute("aria-expanded"), "true");
+  assert.match(
+    doc.getElementById("feature-menu")!.textContent!,
+    /Industry needs/,
+  );
   await act(async () =>
     dom.window.dispatchEvent(
       new dom.window.KeyboardEvent("keydown", { key: "Escape" }),
@@ -123,4 +127,21 @@ test("the mobile menu supports Escape and an invalid route has a recovery link",
   );
   assert.equal(button.getAttribute("aria-expanded"), "false");
   assert.equal(doc.activeElement, button);
+});
+
+test("a new visit starts in Light and saved settings can select Dark or System", async () => {
+  assert.equal(doc.documentElement.dataset.theme, "light");
+  const { saveSetting } = await import("../src/views/Preferences");
+  await act(async () => saveSetting("theme", "dark"));
+  assert.equal(doc.documentElement.dataset.theme, "dark");
+  dom.window.matchMedia = () =>
+    ({
+      matches: true,
+      addEventListener() {},
+      removeEventListener() {},
+    }) as unknown as MediaQueryList;
+  await act(async () => saveSetting("theme", "system"));
+  assert.equal(doc.documentElement.dataset.theme, "dark");
+  await act(async () => saveSetting("theme", "light"));
+  assert.equal(doc.documentElement.dataset.theme, "light");
 });

@@ -1,10 +1,9 @@
+import { featureGroups } from "../components/features";
+import { PageSurface } from "../components/Layout";
 import { illustration } from "../data/assets";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams, Navigate } from "react-router-dom";
 import {
-  BookOpen,
-  CheckCheck,
-  Compass,
   GraduationCap,
   Layers,
   Mail,
@@ -102,37 +101,43 @@ export function Landing() {
           </figcaption>
         </figure>
       </section>
-      <section id="how-it-works" className="wrap how">
-        <div className="section-head">
+      <section id="how-it-works" className="wrap platform-features">
+        <div className="platform-intro">
           <h2>How CHAMPUS works</h2>
+          <p>
+            Industry needs guide course practice. Teacher feedback shows what
+            each student can demonstrate.
+          </p>
         </div>
-        <div className="how-grid">
-          {[
-            [
-              Compass,
-              "Industry identifies a need",
-              "Partners describe a current workplace task and the skill it needs.",
-            ],
-            [
-              CheckCheck,
-              "Teachers shape the task",
-              "Teachers connect the need to a course outcome and a learner in that program.",
-            ],
-            [
-              BookOpen,
-              "Students demonstrate a skill",
-              "Students practise, submit work and use feedback on a specific indicator.",
-            ],
-          ].map(([Icon, title, body]) => {
-            const I = Icon as typeof Compass;
-            return (
-              <section key={String(title)}>
-                <I size={24} />
-                <h3>{String(title)}</h3>
-                <p>{String(body)}</p>
-              </section>
-            );
-          })}
+        <div className="platform-grid">
+          {featureGroups.flatMap((group) =>
+            group.features.map((feature) => {
+              const Icon = feature.icon;
+              const visuals: Record<string, string> = {
+                "learning-plan": "venture-workshop",
+                "industry-needs": "food-photography",
+                "opportunity-hub": "study-plan",
+              };
+              const image = visuals[feature.id];
+              return (
+                <article
+                  className="platform-card"
+                  key={feature.id}
+                  id={feature.id}
+                >
+                  <div className="platform-card-copy">
+                    <Icon size={21} />
+                    <small>{group.title}</small>
+                    <h3>{feature.title}</h3>
+                    <p>{feature.description}</p>
+                  </div>
+                  {image && (
+                    <img src={illustration(image)} loading="lazy" alt="" />
+                  )}
+                </article>
+              );
+            }),
+          )}
         </div>
       </section>
       <section className="explore-band">
@@ -174,7 +179,7 @@ export function Landing() {
     </main>
   );
 }
-export function Opportunities() {
+export function Opportunities({ workspace = false }: { workspace?: boolean }) {
   const s = useStore(),
     [q, setQ] = useSearchParams();
   const search = q.get("q") || "",
@@ -213,7 +218,7 @@ export function Opportunities() {
     );
   });
   return (
-    <main id="main" className="wrap section">
+    <PageSurface workspace={workspace}>
       <p className="overline">
         <span className="tiny-rule" />
         Opportunity hub
@@ -288,7 +293,7 @@ export function Opportunities() {
           )}
         </>
       )}
-    </main>
+    </PageSurface>
   );
 }
 export function SignIn() {
@@ -305,63 +310,80 @@ export function SignIn() {
   return (
     <main id="main" className="auth-wrap">
       <section className="auth-box">
-        <GraduationCap className="big-icon" />
-        <h1>{sent ? "Check your email" : "Sign in to CHAMPUS"}</h1>
-        <p>
-          {sent
-            ? "Use the secure link in your email to open your workspace."
-            : "Use your email to access your profile, saved opportunities and learning evidence."}
-        </p>
-        {!db ? (
-          <>
-            <Notice>
-              Account access is unavailable until this site is connected to its
-              campus service.
-            </Notice>
-            <Link className="btn primary" to="/opportunities">
-              Explore opportunities
-            </Link>
-          </>
-        ) : sent ? (
-          <button className="btn secondary" onClick={() => setSent(false)}>
-            Use another email
-          </button>
-        ) : (
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              job.run(async () => {
-                const redirect = new URL("/sign-in", window.location.origin);
-                redirect.searchParams.set("next", next);
-                check(
-                  await requireDb().auth.signInWithOtp({
-                    email: email.trim(),
-                    options: { emailRedirectTo: redirect.href },
-                  }),
-                );
-                setSent(true);
-              });
-            }}
-          >
-            <label>
-              Email address
-              <input
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
-              />
-            </label>
-            <button className="btn primary" disabled={job.busy}>
-              <Mail size={17} />
-              {job.busy ? "Sending…" : "Send sign-in link"}
+        <div className="auth-intro">
+          <img src="/champus.svg" alt="CHAMPUS" width="49" height="49" />
+          <h1>{sent ? "Check your email" : "Sign in to CHAMPUS"}</h1>
+          <p>
+            {sent
+              ? "Your workspace is one step away."
+              : "Use the email associated with your institution or partner account."}
+          </p>
+        </div>
+        <div className="auth-action">
+          <p>
+            {sent ? (
+              <>
+                Open the sign-in link sent to <strong>{email.trim()}</strong>.
+              </>
+            ) : (
+              "We’ll email you a secure link to open your workspace."
+            )}
+          </p>
+          {!db ? (
+            <>
+              <Notice>
+                Account access is unavailable until this site is connected to
+                its campus service.
+              </Notice>
+              <Link className="btn primary" to="/opportunities">
+                Explore opportunities
+              </Link>
+            </>
+          ) : sent ? (
+            <button className="btn secondary" onClick={() => setSent(false)}>
+              Use another email
             </button>
-          </form>
-        )}
-        {job.message && <Notice>{job.message}</Notice>}
+          ) : (
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                job.run(async () => {
+                  const redirect = new URL("/sign-in", window.location.origin);
+                  redirect.searchParams.set("next", next);
+                  check(
+                    await requireDb().auth.signInWithOtp({
+                      email: email.trim(),
+                      options: { emailRedirectTo: redirect.href },
+                    }),
+                  );
+                  setSent(true);
+                });
+              }}
+            >
+              <label>
+                Email address
+                <input
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                />
+              </label>
+              <button className="btn primary" disabled={job.busy}>
+                <Mail size={17} />
+                {job.busy ? "Sending…" : "Send sign-in link"}
+              </button>
+            </form>
+          )}
+          {job.message && <Notice>{job.message}</Notice>}
+        </div>
       </section>
+      <div className="auth-links">
+        <Link to="/">Back to CHAMPUS</Link>
+        <Link to="/help">Sign-in help</Link>
+      </div>
     </main>
   );
 }

@@ -1,3 +1,4 @@
+import { LearningMilestones } from "../components/LearningMilestones";
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, Navigate } from "react-router-dom";
 import {
@@ -153,13 +154,19 @@ export function Preference() {
     </form>
   );
 }
-export function Curriculum({ role }: { role: Role }) {
+export function Curriculum({
+  role,
+  overview = false,
+}: {
+  role: Role;
+  overview?: boolean;
+}) {
   const s = useStore();
   if (role !== "student" && !s.roles.includes(role))
     return <Navigate replace to="/overview" />;
-  return <Board key={role + s.user!.id} role={role} />;
+  return <Board key={role + s.user!.id} role={role} overview={overview} />;
 }
-function Board({ role }: { role: Role }) {
+function Board({ role, overview }: { role: Role; overview: boolean }) {
   const s = useStore(),
     job = useBusy();
   const [needs, N] = useState<Need[]>([]),
@@ -295,7 +302,9 @@ function Board({ role }: { role: Role }) {
           ? "Teaching studio"
           : industry
             ? "Industry desk"
-            : "My learning plan"}
+            : overview
+              ? "Student overview"
+              : "My learning plan"}
       </h1>
       <p className="lede">
         {teacher
@@ -349,6 +358,7 @@ function Board({ role }: { role: Role }) {
               );
             })}
           </div>
+          {role === "student" && <LearningMilestones />}
           {next && (
             <section className="panel focus-task">
               <div className="overline">
