@@ -1,0 +1,22 @@
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import {pathToFileURL} from 'node:url';
+import {resolve} from 'node:path';
+import {JSDOM,VirtualConsole} from 'jsdom';
+const path=resolve(process.argv[2]||'dist/CHAMPUS.html'),html=await readFile(path,'utf8');
+const dom=new JSDOM(html,{url:pathToFileURL(path).href,runScripts:'outside-only',pretendToBeVisual:true,virtualConsole:new VirtualConsole()});
+const w=dom.window;w.scrollTo=()=>{};w.TextEncoder=TextEncoder;w.TextDecoder=TextDecoder;w.Request=Request;w.Response=Response;w.fetch=()=>Promise.reject(Error('Unexpected network request'));
+assert.equal(w.document.querySelectorAll('script[src],link[rel="stylesheet"][href]').length,0);
+assert.ok(html.includes('data:font/woff2;base64,')||html.includes('data:application/font-woff2;base64,'));
+const bundle=w.document.querySelector('script[type="module"]').textContent;
+w.eval(bundle);
+async function waitFor(check){for(let i=0;i<50;i++){if(check())return;await new Promise(resolve=>setTimeout(resolve,20));}assert.ok(check(),'Expected rendered route');}
+await waitFor(()=>w.document.querySelector('main h1'));
+assert.match(w.document.querySelector('main h1').textContent,/From learning/);
+assert.ok(w.document.querySelector('.hero-image img').src.startsWith('data:image/webp;base64,'));
+const link=w.document.querySelector('main a[href="#/opportunities"]');assert.ok(link);link.click();
+await waitFor(()=>w.document.querySelector('main h1')?.textContent==='Opportunities');
+w.location.hash='/learning/food-story';
+await waitFor(()=>w.document.querySelector('main')?.textContent.includes('Related course outcome'));
+dom.window.close();
+console.log('PASS · embedded assets, landing, catalog navigation and sourced skill detail in portable HTML.');

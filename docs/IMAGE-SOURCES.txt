@@ -1,0 +1,23 @@
+culinary-practice.webp
+Source: Created for CHAMPUS with OpenAI ImageGen on 24 November 2026.
+Purpose: Editorial illustration of a culinary learner practising plate composition.
+This image depicts a fictional setting. It does not document a PIB class, a USU event, or a real student submission.
+Suggested accessible description: A cook uses tweezers to arrange a garnish on a plated dish.
+Original and web asset size: 1536 by 1024 pixels. WebP, 120016 bytes.
+
+venture-workshop.webp
+Source: Created for CHAMPUS with OpenAI ImageGen on 24 November 2026.
+Purpose: Editorial illustration of students exploring a product idea. Fictional setting and participants.
+Suggested accessible description: Two students refine a cardboard prototype at a workbench.
+
+food-photography.webp
+Source: Created for CHAMPUS with OpenAI ImageGen on 24 November 2026.
+Purpose: Editorial illustration of food photography practice in a fictional setting.
+Suggested accessible description: A student frames sliced dragon fruit with a digital camera.
+Dimensions: 960 by 640 pixels. WebP, 92856 bytes.
+
+study-plan.webp
+Source: Created for CHAMPUS with OpenAI ImageGen on 24 November 2026.
+Purpose: Editorial illustration of a student planning their studies in a fictional setting.
+Suggested accessible description: A student writes a study plan in a notebook by a library window.
+Dimensions: 960 by 640 pixels. WebP, 70220 bytes.
