@@ -131,7 +131,7 @@ test("the Features disclosure supports Escape and an invalid route has a recover
 
 test("a new visit starts in Light and saved settings can select Dark or System", async () => {
   assert.equal(doc.documentElement.dataset.theme, "light");
-  const { saveSetting } = await import("../src/views/Preferences");
+  const { saveSetting } = await import("../src/data/appearance");
   await act(async () => saveSetting("theme", "dark"));
   assert.equal(doc.documentElement.dataset.theme, "dark");
   dom.window.matchMedia = () =>
@@ -144,4 +144,35 @@ test("a new visit starts in Light and saved settings can select Dark or System",
   assert.equal(doc.documentElement.dataset.theme, "dark");
   await act(async () => saveSetting("theme", "light"));
   assert.equal(doc.documentElement.dataset.theme, "light");
+});
+
+test("every public feature opens a dedicated page and the introduction appears once per tab", async () => {
+  const { featureGroups } = await import("../src/components/features");
+  for (const group of featureGroups) {
+    for (const feature of group.features) {
+      await go("/features/" + feature.id);
+      assert.equal(doc.querySelector("main h1")?.textContent, feature.title);
+      assert.equal(doc.querySelectorAll("main ol li").length, 3);
+    }
+  }
+  await go("/welcome");
+  assert.equal(dom.window.location.pathname, "/sign-in");
+});
+
+test("feedback stays separate from the help menu and hover is the sidebar default", async () => {
+  await go("/features/teacher-dashboard");
+  assert.ok(doc.querySelector('header a[aria-label="Feedback"]'));
+  const help = doc.querySelector<HTMLButtonElement>(
+    'button[aria-label="Help"]',
+  )!;
+  await act(async () => help.click());
+  assert.match(
+    doc.querySelector("#header-help")?.textContent || "",
+    /Help center/,
+  );
+  assert.equal(
+    doc.querySelector('#header-help a[href="/help#feedback"]'),
+    null,
+  );
+  assert.equal(dom.window.localStorage.getItem("champus.ui.rail"), null);
 });

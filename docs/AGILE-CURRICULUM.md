@@ -75,12 +75,12 @@ Treat each row in this document as a review requirement. A feature has a release
 | --- | --- |
 | Guest visits the root | Show the landing page in Light mode on a new device. Open Features on pointer hover or when the visitor activates its button. Escape closes the panel. |
 | Account opens the root | Open its assigned dashboard. The workspace keeps its navigation when a user opens an opportunity, skill, or search result. |
-| Account chooses View landing page | Open /welcome. Its account control shows the saved photo or initials. Dashboard returns the visitor to the active workspace. |
+| Returning visitor opens the introduction | Send the visitor to sign-in after the first introduction in that tab. Send a signed-in account to its workspace. Keep profile and sign-out actions in the avatar menu. |
 | Student | Open overview, course plan, assessed indicators and opportunities. Guide the student to the next applicable task. |
 | Teacher | Open Teaching Studio. Use course enrollment to assign tasks and the review queue to evaluate evidence. |
 | Industry partner | Open Industry Desk. Publish or update a workplace need and link it to an observable skill. |
 | Any account | Use Settings to choose Light, Dark or System and the desktop sidebar behavior. Settings apply on the current device. |
 
-Use a fixed header for orientation. Keep the workspace sidebar visible during scroll. Group the Feature panel by role, with one reason per link. The supplied Supabase screenshots guide panel grouping and sidebar density. The sign-in reference guides the placement of the title and email action. Use the CHAMPUS type, colors and icons. [W3C hover and focus guidance](https://www.w3.org/WAI/WCAG22/Understanding/content-on-hover-or-focus.html)
+Use a fixed header for orientation. Keep the workspace sidebar visible during scroll. Group the Feature panel in workflow order from industry to teacher to student. Give each feature a dedicated explanation page. Default the desktop sidebar to expand over the page on hover and keyboard focus. Expanded mode reserves page space. The supplied Supabase screenshots guide panel grouping, theme previews and sidebar density. The Ethereum reference guides the full-width hero, introductory statement and alternating workflow sections. The sign-in reference guides the placement of the title and email action. Use the CHAMPUS type, colors and icons. [Ethereum layout](https://ethereum.org/) · [W3C hover and focus guidance](https://www.w3.org/WAI/WCAG22/Understanding/content-on-hover-or-focus.html)
 
 Show four student milestones from actual records. Setting a goal, completing practice, submitting evidence and receiving verification are separate events. Show the first unfinished milestone as a suggested action. Academic verification remains tied to the submitted artifact. [Sailer and Homner, gamification meta-analysis](https://doi.org/10.1007/s10648-019-09498-w)

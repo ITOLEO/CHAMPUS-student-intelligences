@@ -52,6 +52,10 @@ Use **Staff workspace** to create a draft, attach an indicator and check the org
 - `src/recommendation/recommendationEngine.ts` contains eligibility, deadlines and indicator readiness.
 - `tests/` exercises the React routes, recommendation logic and both SQL migrations.
 
+## Sign in with a password
+
+Use the Email provider in Supabase Auth. CHAMPUS accepts an existing password or a secure email link. Accounts created through an email link can use **Forgot password?** to set a password. Allow the production origin's /sign-in redirect, including the recovery query parameters, in Supabase Authentication URL Configuration.
+
 ## Activate the three dashboards
 
 On an existing CHAMPUS database with both initial migrations applied, run **supabase/migrations/202611250001_agile_curriculum.sql** once. For a fresh database run all three migration files in filename order. The new migration preserves existing opportunity, profile and evidence records. Each signed-in user can access the student plan. The teacher and industry routes check assigned roles. The existing reviewer role retains its original institution-wide review rights. Use the teacher role alone for a course-scoped instructor.

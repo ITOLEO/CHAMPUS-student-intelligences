@@ -1,10 +1,14 @@
+import { ThemeChoices } from "./Appearance";
+import { useAppearance } from "../data/appearance";
+import { requireDb } from "../data/client";
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   ChevronDown,
   CircleHelp,
   LayoutDashboard,
-  LayoutTemplate,
+  LogOut,
+  Clock3,
   LogIn,
   Menu,
   MessageSquare,
@@ -13,16 +17,22 @@ import {
   UserRound,
   X,
 } from "lucide-react";
-import { useStore } from "../data/store";
+import { useStore, useBusy } from "../data/store";
 import { safeWebUrl } from "../data/model";
-import { featureGroups } from "./features";
+import { featureGroups, featurePath } from "./features";
 
 export function Brand({ to = "/" }: { to?: string }) {
   return (
     <Link
       className="brand"
       to={to}
-      aria-label={to === "/overview" ? "CHAMPUS dashboard" : "CHAMPUS home"}
+      aria-label={
+        to === "/overview"
+          ? "CHAMPUS dashboard"
+          : to === "/sign-in"
+            ? "CHAMPUS sign-in"
+            : "CHAMPUS home"
+      }
     >
       <img src="/champus.svg" alt="" width="35" height="35" />
       CHAMPUS
@@ -59,14 +69,56 @@ export function Avatar() {
 }
 
 type Popup = "features" | "account" | "help" | "search";
+function LocalClock() {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const tick = window.setInterval(() => setNow(new Date()), 1000);
+    return () => window.clearInterval(tick);
+  }, []);
+  const date = new Intl.DateTimeFormat("en-GB", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(now);
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+    timeZoneName: "shortOffset",
+  }).formatToParts(now);
+  const zone = parts.find((part) => part.type === "timeZoneName")?.value;
+  const time = parts
+    .filter((part) => ["hour", "minute", "second"].includes(part.type))
+    .map((part) => part.value)
+    .join(":");
+  return (
+    <time
+      className="local-clock"
+      dateTime={now.toISOString()}
+      title={date + " · " + time + " " + zone}
+    >
+      <span>{date}</span>
+      <b>{time}</b>
+      <span>{zone}</span>
+    </time>
+  );
+}
+
 export function Header() {
-  const { user } = useStore();
+  useAppearance();
+  const { user, profile, roles } = useStore();
+  const job = useBusy();
   const location = useLocation();
   const navigate = useNavigate();
-  const publicLanding =
-    location.pathname === "/" || location.pathname === "/welcome";
-  const workspace =
-    !!user && !publicLanding && location.pathname !== "/sign-in";
+  const workspace = !!user;
+  const atIntroduction = location.pathname === "/";
+  const role = roles.includes("teacher")
+    ? "Teacher"
+    : roles.includes("industry")
+      ? "Industry partner"
+      : "Student";
   const [popup, setPopup] = useState<Popup | null>(null);
   const [query, setQuery] = useState("");
   const search = useRef<HTMLInputElement>(null);
@@ -117,7 +169,9 @@ export function Header() {
       className={workspace ? "global workspace-header" : "global"}
     >
       <div className="bar">
-        <Brand to={user ? "/overview" : "/"} />
+        <Brand
+          to={user ? "/overview" : location.pathname === "/" ? "/" : "/sign-in"}
+        />
         {!workspace && (
           <nav aria-label="Main navigation" className="marketing-nav">
             <div
@@ -179,13 +233,10 @@ export function Header() {
                         const Icon = item.icon;
                         return (
                           <Link
+                            replace={atIntroduction}
                             key={item.id}
                             className="feature-menu-link"
-                            to={
-                              (user && publicLanding ? "/welcome" : "/") +
-                              "#" +
-                              item.id
-                            }
+                            to={featurePath(item.id)}
                           >
                             <span className="feature-icon">
                               <Icon size={19} />
@@ -202,23 +253,38 @@ export function Header() {
                 </div>
               </div>
             </div>
-            <Link className="nav-text marketing-link" to="/opportunities">
+            <Link
+              replace={atIntroduction}
+              className="nav-text marketing-link"
+              to="/opportunities"
+            >
               Opportunities
             </Link>
-            <Link className="nav-text marketing-link" to="/learning">
+            <Link
+              replace={atIntroduction}
+              className="nav-text marketing-link"
+              to="/learning"
+            >
               Learning library
             </Link>
           </nav>
         )}
         {workspace && <span className="workspace-header-label">Workspace</span>}
         <div className="nav-actions">
-          <button
-            type="button"
-            className="nav-text desktop-feedback"
-            onClick={() => navigate("/help#feedback")}
-          >
-            Feedback
-          </button>
+          {workspace ? (
+            <LocalClock />
+          ) : (
+            <Link
+              replace={atIntroduction}
+              className="nav-text desktop-feedback"
+              to="/help#feedback"
+              aria-label="Feedback"
+              title="Feedback"
+            >
+              <MessageSquare size={16} />
+              <span>Feedback</span>
+            </Link>
+          )}
           <button
             ref={searchButton}
             type="button"
@@ -258,36 +324,80 @@ export function Header() {
               </button>
               {popup === "account" && (
                 <div className="header-popup" id="header-account">
-                  <Link to="/overview">
-                    <LayoutDashboard size={17} /> Dashboard
-                  </Link>
-                  <Link to="/profile">
-                    <UserRound size={17} /> My profile
-                  </Link>
-                  <Link to="/settings">
-                    <Settings size={17} /> Settings
-                  </Link>
-                  {workspace && (
-                    <Link to="/welcome">
-                      <LayoutTemplate size={17} /> View landing page
+                  <div className="account-summary">
+                    <Avatar />
+                    <div>
+                      <strong>{profile.name || role + " account"}</strong>
+                      <small>{user.email}</small>
+                    </div>
+                  </div>
+                  <div className="account-section">
+                    <Link
+                      replace={atIntroduction}
+                      to="/overview"
+                      onClick={() => setPopup(null)}
+                    >
+                      <LayoutDashboard size={17} /> Dashboard
                     </Link>
-                  )}
+                    <Link
+                      replace={atIntroduction}
+                      to="/profile"
+                      onClick={() => setPopup(null)}
+                    >
+                      <UserRound size={17} /> My profile
+                    </Link>
+                    <Link
+                      replace={atIntroduction}
+                      to="/settings"
+                      onClick={() => setPopup(null)}
+                    >
+                      <Settings size={17} /> Settings
+                    </Link>
+                  </div>
+                  <div className="account-section account-appearance">
+                    <span>Theme</span>
+                    <ThemeChoices />
+                  </div>
+                  <div className="account-section account-zone">
+                    <Clock3 size={16} />{" "}
+                    {Intl.DateTimeFormat().resolvedOptions().timeZone}
+                  </div>
+                  <div className="account-section">
+                    <button
+                      type="button"
+                      className="account-signout"
+                      disabled={job.busy}
+                      onClick={() =>
+                        job.run(async () => {
+                          const { error } = await requireDb().auth.signOut({
+                            scope: "local",
+                          });
+                          if (error) throw error;
+                          navigate("/sign-in", { replace: true });
+                        })
+                      }
+                    >
+                      <LogOut size={17} /> Sign out
+                    </button>
+                    {job.message && <small role="alert">{job.message}</small>}
+                  </div>
                 </div>
               )}
             </>
           ) : (
-            <Link className="btn primary nav-login" to="/sign-in">
+            <Link
+              replace={atIntroduction}
+              className="btn primary nav-login"
+              to="/sign-in"
+            >
               <LogIn size={16} />
               <span>Sign in</span>
             </Link>
           )}
           {popup === "help" && (
             <div className="header-popup" id="header-help">
-              <Link to="/help">
+              <Link replace={atIntroduction} to="/help">
                 <CircleHelp size={17} /> Help center
-              </Link>
-              <Link to="/help#feedback">
-                <MessageSquare size={17} /> Give feedback
               </Link>
             </div>
           )}
@@ -303,6 +413,7 @@ export function Header() {
                     (query.trim()
                       ? "?" + new URLSearchParams({ q: query.trim() })
                       : ""),
+                  { replace: atIntroduction },
                 );
               }}
             >

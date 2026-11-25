@@ -1,13 +1,13 @@
-import { useAppearance, saveSetting } from "../views/Preferences";
+import { railModes } from "./Appearance";
+import { useAppearance, saveSetting } from "../data/appearance";
 import { illustration } from "../data/assets";
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, NavLink, Navigate, useLocation } from "react-router-dom";
 import {
   BookOpen,
   Settings,
   Building2,
   BookmarkCheck,
-  ExternalLink,
   PanelLeft,
   ListChecks,
   Bookmark,
@@ -16,26 +16,29 @@ import {
   Compass,
   GraduationCap,
   LayoutDashboard,
-  LogOut,
   ShieldCheck,
-  UserRound,
 } from "lucide-react";
 import { useStore, useBusy } from "../data/store";
 import { requireDb, check } from "../data/client";
 import { deadlineText } from "../recommendation/recommendationEngine";
 import { picture, type Listing } from "../data/model";
 
-import { Avatar, Brand } from "./Navigation";
+import { Brand } from "./Navigation";
 
 export function Footer() {
   const { user } = useStore();
+  const onIntroduction = useLocation().pathname === "/";
   return (
     <footer>
       <div className="footer-inner">
-        <Brand to={user ? "/overview" : "/"} />
+        <Brand to={user ? "/overview" : "/sign-in"} />
         <span>From learning to opportunity.</span>
-        <Link to="/opportunities">Opportunities</Link>
-        <Link to="/learning">Learning library</Link>
+        <Link replace={onIntroduction} to="/opportunities">
+          Opportunities
+        </Link>
+        <Link replace={onIntroduction} to="/learning">
+          Learning library
+        </Link>
       </div>
     </footer>
   );
@@ -122,7 +125,6 @@ export function Guard({ children }: { children: ReactNode }) {
 }
 export function Workspace({ children }: { children: ReactNode }) {
   const s = useStore();
-  const job = useBusy();
   const rail = useAppearance();
   const [mobileOpen, setMobileOpen] = useState(false);
   const teacher = s.roles.includes("teacher");
@@ -150,6 +152,27 @@ export function Workspace({ children }: { children: ReactNode }) {
       ["/opportunities?saved=1", "Saved opportunities", BookmarkCheck],
     );
   const location = useLocation();
+  const [railMenu, setRailMenu] = useState(false);
+  const controls = useRef<HTMLDivElement>(null);
+  const railButton = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!railMenu) return;
+    const dismiss = (e: PointerEvent) => {
+      if (!controls.current?.contains(e.target as Node)) setRailMenu(false);
+    };
+    const escape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setRailMenu(false);
+        railButton.current?.focus();
+      }
+    };
+    window.addEventListener("pointerdown", dismiss);
+    window.addEventListener("keydown", escape);
+    return () => {
+      window.removeEventListener("pointerdown", dismiss);
+      window.removeEventListener("keydown", escape);
+    };
+  }, [railMenu]);
   return (
     <div className={"work-shell rail-" + rail}>
       <aside className="side">
@@ -159,24 +182,17 @@ export function Workspace({ children }: { children: ReactNode }) {
             className="btn secondary"
             aria-expanded={mobileOpen}
             aria-controls="workspace-nav"
+            aria-label="Workspace navigation"
+            title="Workspace navigation"
             onClick={() => setMobileOpen(!mobileOpen)}
           >
-            <PanelLeft size={17} /> Workspace navigation
+            <PanelLeft size={19} />
           </button>
         </div>
         <div
           id="workspace-nav"
           className={mobileOpen ? "rail-content mobile-open" : "rail-content"}
         >
-          <div className="rail-heading">
-            <Avatar />
-            <div>
-              <strong>{s.profile.name || "My workspace"}</strong>
-              <small>
-                {teacher ? "Teaching" : industry ? "Industry" : "Student"}
-              </small>
-            </div>
-          </div>
           <nav aria-label="Workspace navigation">
             {links.map(([to, label, Icon]) => {
               const isSaved = to.includes("?");
@@ -203,75 +219,55 @@ export function Workspace({ children }: { children: ReactNode }) {
               );
             })}
           </nav>
-          <nav className="rail-bottom" aria-label="Account navigation">
-            <NavLink
-              to="/profile"
-              title="My profile"
-              aria-label="My profile"
-              onClick={() => setMobileOpen(false)}
-            >
-              <UserRound />
-              <span>My profile</span>
-            </NavLink>
+          <div className="rail-bottom" ref={controls}>
             <NavLink
               to="/settings"
+              className="icon-btn rail-tool"
               title="Settings"
               aria-label="Settings"
-              onClick={() => setMobileOpen(false)}
+              onClick={() => {
+                setRailMenu(false);
+                setMobileOpen(false);
+              }}
             >
-              <Settings />
-              <span>Settings</span>
-            </NavLink>
-            <NavLink
-              to="/welcome"
-              title="View landing page"
-              aria-label="View landing page"
-            >
-              <ExternalLink />
-              <span>View landing page</span>
+              <Settings size={17} />
             </NavLink>
             <button
-              aria-label="Sign out"
-              title="Sign out"
-              className="text-btn signout"
-              disabled={job.busy}
-              onClick={() =>
-                job.run(async () => {
-                  const { error } = await requireDb().auth.signOut();
-                  if (error) throw error;
-                })
-              }
-            >
-              <LogOut size={17} />
-              <span>Sign out</span>
-            </button>
-            {job.message && <Notice>{job.message}</Notice>}
-            <button
+              ref={railButton}
               type="button"
-              className="text-btn rail-control"
-              aria-label={
-                rail === "expanded"
-                  ? "Collapse navigation"
-                  : "Expand navigation"
-              }
-              title={
-                rail === "expanded"
-                  ? "Collapse navigation"
-                  : "Expand navigation"
-              }
-              onClick={() =>
-                saveSetting(
-                  "rail",
-                  rail === "expanded" ? "collapsed" : "expanded",
-                )
-              }
+              className="icon-btn rail-tool rail-control"
+              aria-label="Sidebar control"
+              title="Sidebar control"
+              aria-expanded={railMenu}
+              aria-controls="sidebar-options"
+              onClick={() => setRailMenu(!railMenu)}
             >
-              <PanelLeft />
-              <span>
-                {rail === "expanded" ? "Collapse sidebar" : "Expand sidebar"}
-              </span>
+              <PanelLeft size={17} />
             </button>
-          </nav>
+            {railMenu && (
+              <div
+                className="sidebar-options"
+                id="sidebar-options"
+                role="group"
+                aria-label="Sidebar control"
+              >
+                <strong>Sidebar control</strong>
+                {railModes.map((mode) => (
+                  <button
+                    type="button"
+                    key={mode.id}
+                    aria-pressed={rail === mode.id}
+                    onClick={() => {
+                      saveSetting("rail", mode.id);
+                      setRailMenu(false);
+                    }}
+                  >
+                    {mode.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </aside>
       <main id="main" className="work-main">
@@ -309,6 +305,7 @@ export function SaveButton({
         </button>
       ) : (
         <Link
+          replace={loc.pathname === "/"}
           className={cls}
           aria-label="Sign in to save opportunity"
           title="Sign in to save opportunity"
@@ -328,12 +325,14 @@ export function SaveButton({
   );
 }
 export function Card({ row }: { row: Listing }) {
+  const onIntroduction = useLocation().pathname === "/";
   const o = row.data,
     photo = picture(o.id);
   return (
     <article className="opp-card">
       <Link
         className="card-img"
+        replace={onIntroduction}
         to={"/opportunities/" + row.id}
         aria-label={"View " + o.title}
       >
@@ -349,7 +348,9 @@ export function Card({ row }: { row: Listing }) {
       <div className="card-copy">
         <div className="card-org">{o.organization}</div>
         <h3>
-          <Link to={"/opportunities/" + row.id}>{o.title}</Link>
+          <Link replace={onIntroduction} to={"/opportunities/" + row.id}>
+            {o.title}
+          </Link>
         </h3>
         <p>{o.summary}</p>
         <div className="card-foot">

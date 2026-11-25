@@ -175,7 +175,7 @@ function Board({ role, overview }: { role: Role; overview: boolean }) {
     [style, S] = useState(""),
     [rev, refresh] = useState(0),
     [loading, L] = useState(true),
-    [error, E] = useState(false),
+    [error, E] = useState<"schema" | "load" | null>(null),
     [edit, Edit] = useState<Need | null>(null);
   useEffect(() => {
     let mounted = true;
@@ -188,35 +188,39 @@ function Board({ role, overview }: { role: Role; overview: boolean }) {
       return role === "industry" ? q.eq("author_id", s.user!.id) : q;
     }
     L(true);
-    E(false);
+    E(null);
+    const read = <T,>(result: { data: T; error: { code: string } | null }) => {
+      if (result.error) throw result.error;
+      return result.data;
+    };
     (async () => {
       const [n, r, t, p] = await Promise.all([
         role === "student"
           ? []
           : industryQuery()
               .order("updated_at", { ascending: false })
-              .then(check),
+              .then(read),
         role === "industry"
           ? []
           : db
               .from("teaching_roster")
               .select("*")
               .eq(role === "teacher" ? "teacher_id" : "student_id", s.user!.id)
-              .then(check),
+              .then(read),
         role === "industry"
           ? []
           : db
               .from("curriculum_tasks")
               .select("*")
               .order("created_at", { ascending: false })
-              .then(check),
+              .then(read),
         role === "student"
           ? db
               .from("learning_preferences")
               .select("work_style")
               .eq("user_id", s.user!.id)
               .maybeSingle()
-              .then(check)
+              .then((result) => result.data)
           : null,
       ]);
       if (mounted) {
@@ -226,8 +230,13 @@ function Board({ role, overview }: { role: Role; overview: boolean }) {
         S(p?.work_style || "");
       }
     })()
-      .catch(() => {
-        if (mounted) E(true);
+      .catch((failure: unknown) => {
+        if (!mounted) return;
+        const code =
+          typeof failure === "object" && failure && "code" in failure
+            ? failure.code
+            : null;
+        E(code === "PGRST205" || code === "42P01" ? "schema" : "load");
       })
       .finally(() => {
         if (mounted) L(false);
@@ -313,13 +322,28 @@ function Board({ role, overview }: { role: Role; overview: boolean }) {
             ? "Describe the capabilities your teams need in practice."
             : "Follow your course outcomes, practise one skill and submit evidence."}
       </p>
+      {role === "student" && <LearningMilestones />}
       {loading ? (
         <Notice>Loading workspace…</Notice>
       ) : error ? (
-        <Notice>
-          Curriculum data unavailable.{" "}
-          <button onClick={() => refresh((x) => x + 1)}>Retry</button>
-        </Notice>
+        <section className="panel curriculum-unavailable">
+          <h2>
+            {error === "schema"
+              ? "Course workspace needs setup"
+              : "Course workspace is temporarily unavailable"}
+          </h2>
+          <p>
+            {error === "schema"
+              ? "Ask your institution administrator to finish the agile curriculum database setup."
+              : "Try again to reload assignments and industry needs."}
+          </p>
+          <button
+            className="btn secondary"
+            onClick={() => refresh((x) => x + 1)}
+          >
+            Retry
+          </button>
+        </section>
       ) : (
         <>
           <div className="curr-stats">
@@ -358,7 +382,6 @@ function Board({ role, overview }: { role: Role; overview: boolean }) {
               );
             })}
           </div>
-          {role === "student" && <LearningMilestones />}
           {next && (
             <section className="panel focus-task">
               <div className="overline">

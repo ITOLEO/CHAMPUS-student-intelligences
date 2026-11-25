@@ -1,19 +1,17 @@
-import { featureGroups } from "../components/features";
+import { featureGroups, featurePath } from "../components/features";
 import { PageSurface } from "../components/Layout";
 import { illustration } from "../data/assets";
-import { useEffect, useMemo, useState } from "react";
-import { Link, useSearchParams, Navigate } from "react-router-dom";
+import { useMemo, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import {
+  ArrowRight,
   GraduationCap,
-  Layers,
-  Mail,
   Search,
   SlidersHorizontal,
 } from "lucide-react";
 import { Card, CatalogState, Empty, Notice } from "../components/Layout";
 import { useStore, useBusy } from "../data/store";
-import { check, db, requireDb } from "../data/client";
-import { emptyProfile, safeReturn } from "../data/model";
+import { emptyProfile } from "../data/model";
 import { isClosed, recommended } from "../recommendation/recommendationEngine";
 
 function CategoryFilters({
@@ -55,89 +53,88 @@ export function Landing() {
     .slice(0, 3);
   return (
     <main id="main">
-      <section className="hero wrap">
-        <div className="hero-copy">
-          <div className="overline">
-            <span className="tiny-rule" />
-            Agile curriculum platform
-          </div>
-          <h1>
-            From learning
-            <br />
-            <em>to opportunity.</em>
-          </h1>
-          <p>
-            Turn industry needs into course practice. Work on an individual
-            task, submit evidence and use teacher feedback to develop your next
-            skill.
-          </p>
-          <div className="hero-buttons">
-            <Link
-              className="btn primary"
-              to={s.user ? "/overview" : "/sign-in"}
-            >
-              <GraduationCap size={18} />
-              {s.user ? "Open workspace" : "Sign in to your workspace"}
-            </Link>
-            <Link className="btn secondary" to="/opportunities">
-              Explore opportunities
-            </Link>
-          </div>
-        </div>
-        <figure className="hero-image">
-          <img
-            src={illustration("culinary-practice")}
-            alt="A cook places a garnish on a dish with tweezers."
-            fetchPriority="high"
-          />
-          <figcaption>
-            <span className="photo-mark">
-              <Layers size={20} />
-            </span>
-            <div>
-              <span>Culinary arts</span>
-              <strong>Plate composition</strong>
+      <section className="landing-hero">
+        <img
+          src={illustration("venture-workshop")}
+          alt="Students work together on a project in a workshop."
+          fetchPriority="high"
+        />
+        <div className="wrap landing-hero-content">
+          <div className="hero-copy">
+            <p className="overline">Agile curriculum platform</p>
+            <h1>
+              From learning
+              <br />
+              <em>to opportunity.</em>
+            </h1>
+            <p>
+              Turn industry needs into course practice. Build evidence of what
+              students can do.
+            </p>
+            <div className="hero-buttons">
+              <Link replace className="btn primary" to="/sign-in">
+                <GraduationCap size={18} /> Sign in to your workspace
+              </Link>
+              <Link replace className="btn secondary" to="/opportunities">
+                Explore opportunities
+              </Link>
             </div>
-          </figcaption>
-        </figure>
+          </div>
+        </div>
       </section>
-      <section id="how-it-works" className="wrap platform-features">
-        <div className="platform-intro">
-          <h2>How CHAMPUS works</h2>
+      <section id="how-it-works" className="wrap landing-story">
+        <div className="landing-statement">
+          <h2>What students learn should connect to what they do.</h2>
           <p>
-            Industry needs guide course practice. Teacher feedback shows what
-            each student can demonstrate.
+            Partners describe changes in the workplace. Teachers connect those
+            needs to course outcomes. Students practise, submit evidence, and
+            learn from feedback.
           </p>
         </div>
-        <div className="platform-grid">
-          {featureGroups.flatMap((group) =>
-            group.features.map((feature) => {
-              const Icon = feature.icon;
-              const visuals: Record<string, string> = {
-                "learning-plan": "venture-workshop",
-                "industry-needs": "food-photography",
-                "opportunity-hub": "study-plan",
-              };
-              const image = visuals[feature.id];
-              return (
-                <article
-                  className="platform-card"
-                  key={feature.id}
-                  id={feature.id}
-                >
-                  <div className="platform-card-copy">
-                    <Icon size={21} />
-                    <small>{group.title}</small>
-                    <h3>{feature.title}</h3>
-                    <p>{feature.description}</p>
-                  </div>
-                  {image && (
-                    <img src={illustration(image)} loading="lazy" alt="" />
+        <div className="landing-workflow">
+          {featureGroups.map((group) => {
+            const primary = group.features[0];
+            const Icon = primary.icon;
+            return (
+              <article className="landing-chapter" key={group.id}>
+                <img
+                  src={illustration(
+                    group.image === "venture-workshop"
+                      ? "food-photography"
+                      : group.image,
                   )}
-                </article>
-              );
-            }),
-          )}
+                  alt=""
+                  loading="lazy"
+                />
+                <div className="landing-chapter-content">
+                  <p className="overline">
+                    <Icon size={17} /> {group.title}
+                  </p>
+                  <h2>{primary.title}</h2>
+                  <p>{primary.description}</p>
+                  <Link
+                    replace
+                    className="feature-action"
+                    to={featurePath(primary.id)}
+                  >
+                    Explore {primary.title}
+                    <ArrowRight size={16} />
+                  </Link>
+                  <div className="chapter-links">
+                    {group.features.slice(1).map((feature) => (
+                      <Link
+                        replace
+                        key={feature.id}
+                        to={featurePath(feature.id)}
+                      >
+                        {feature.title}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              </article>
+            );
+          })}
         </div>
       </section>
       <section className="explore-band">
@@ -150,7 +147,7 @@ export function Landing() {
               </p>
               <h2>Explore opportunities</h2>
             </div>
-            <Link className="view-all" to="/opportunities">
+            <Link replace className="view-all" to="/opportunities">
               View all opportunities
             </Link>
           </div>
@@ -294,96 +291,5 @@ export function Opportunities({ workspace = false }: { workspace?: boolean }) {
         </>
       )}
     </PageSurface>
-  );
-}
-export function SignIn() {
-  const s = useStore(),
-    [params] = useSearchParams(),
-    job = useBusy();
-  const next = safeReturn(params.get("next"));
-  const [email, setEmail] = useState(""),
-    [sent, setSent] = useState(false);
-  useEffect(() => {
-    document.title = "Sign in | CHAMPUS";
-  }, []);
-  if (s.user) return <Navigate to={next} replace />;
-  return (
-    <main id="main" className="auth-wrap">
-      <section className="auth-box">
-        <div className="auth-intro">
-          <img src="/champus.svg" alt="CHAMPUS" width="49" height="49" />
-          <h1>{sent ? "Check your email" : "Sign in to CHAMPUS"}</h1>
-          <p>
-            {sent
-              ? "Your workspace is one step away."
-              : "Use the email associated with your institution or partner account."}
-          </p>
-        </div>
-        <div className="auth-action">
-          <p>
-            {sent ? (
-              <>
-                Open the sign-in link sent to <strong>{email.trim()}</strong>.
-              </>
-            ) : (
-              "We’ll email you a secure link to open your workspace."
-            )}
-          </p>
-          {!db ? (
-            <>
-              <Notice>
-                Account access is unavailable until this site is connected to
-                its campus service.
-              </Notice>
-              <Link className="btn primary" to="/opportunities">
-                Explore opportunities
-              </Link>
-            </>
-          ) : sent ? (
-            <button className="btn secondary" onClick={() => setSent(false)}>
-              Use another email
-            </button>
-          ) : (
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                job.run(async () => {
-                  const redirect = new URL("/sign-in", window.location.origin);
-                  redirect.searchParams.set("next", next);
-                  check(
-                    await requireDb().auth.signInWithOtp({
-                      email: email.trim(),
-                      options: { emailRedirectTo: redirect.href },
-                    }),
-                  );
-                  setSent(true);
-                });
-              }}
-            >
-              <label>
-                Email address
-                <input
-                  type="email"
-                  autoComplete="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@example.com"
-                />
-              </label>
-              <button className="btn primary" disabled={job.busy}>
-                <Mail size={17} />
-                {job.busy ? "Sending…" : "Send sign-in link"}
-              </button>
-            </form>
-          )}
-          {job.message && <Notice>{job.message}</Notice>}
-        </div>
-      </section>
-      <div className="auth-links">
-        <Link to="/">Back to CHAMPUS</Link>
-        <Link to="/help">Sign-in help</Link>
-      </div>
-    </main>
   );
 }
