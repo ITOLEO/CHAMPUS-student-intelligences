@@ -51,3 +51,23 @@ Use **Staff workspace** to create a draft, attach an indicator and check the org
 - `docs/IMAGE-SOURCES.txt` identifies the illustrative artwork.
 - `src/recommendation/recommendationEngine.ts` contains eligibility, deadlines and indicator readiness.
 - `tests/` exercises the React routes, recommendation logic and both SQL migrations.
+
+## Activate the three dashboards
+
+On an existing CHAMPUS database with both initial migrations applied, run **supabase/migrations/202611250001_agile_curriculum.sql** once. For a fresh database run all three migration files in filename order. The new migration preserves existing opportunity, profile and evidence records. Each signed-in user can access the student plan. The teacher and industry routes check assigned roles. The existing reviewer role retains its original institution-wide review rights. Use the teacher role alone for a course-scoped instructor.
+
+In Supabase SQL Editor, assign verified users who have already selected the same institution. Replace each placeholder with an actual registered account, program or course. Run the statements only for authorized participants.
+
+```sql
+insert into public.staff_roles (user_id,institution_id,role) values
+ ('<teacher-uuid>','pib','teacher'),
+ ('<partner-uuid>','pib','industry')
+on conflict do nothing;
+
+insert into public.teaching_roster
+ (institution_id,teacher_id,student_id,program,course,student_label)
+values ('pib','<teacher-uuid>','<student-uuid>','<formal program>','<formal course>','<student display name>')
+on conflict do nothing;
+```
+
+Open the industry desk and publish a need. In the teacher account, choose that need and an authorized course enrollment. Record the formal outcome, task, and observable indicator. In the student account, open the assigned task from My learning plan, then submit evidence. Review it in the teacher account. Industry accounts have no access to the roster, student personality or student submissions through the industry role.

@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import {
   BookOpen,
   CheckCircle2,
@@ -152,6 +152,8 @@ function Practice({ skill }: { skill: Skill }) {
   );
 }
 function SubmitWork({ skill }: { skill: Skill }) {
+  const [query] = useSearchParams();
+  const task = query.get("task");
   const s = useStore(),
     job = useBusy();
   const [title, T] = useState(""),
@@ -198,18 +200,17 @@ function SubmitWork({ skill }: { skill: Skill }) {
             .upload(path, file, { contentType: file.type }),
         );
       }
-      const res = await client
-        .from("evidence")
-        .insert({
-          id,
-          user_id: s.user.id,
-          institution_id: s.institution,
-          indicator_id: skill.id,
-          title: title.trim(),
-          description: desc.trim(),
-          link: link.trim() || null,
-          file_path: path,
-        });
+      const res = await client.from("evidence").insert({
+        id,
+        user_id: s.user.id,
+        institution_id: s.institution,
+        indicator_id: skill.id,
+        title: title.trim(),
+        description: desc.trim(),
+        link: link.trim() || null,
+        file_path: path,
+        ...(task ? { task_id: task } : {}),
+      });
       if (res.error) {
         if (path) await client.storage.from("evidence").remove([path]);
         throw Error(res.error.message);
@@ -286,17 +287,15 @@ function ReflectionForm({ skill }: { skill: Skill }) {
         e.preventDefault();
         job.run(async () => {
           check(
-            await requireDb()
-              .from("self_assessments")
-              .upsert(
-                {
-                  user_id: s.user!.id,
-                  indicator_id: skill.id,
-                  assessment,
-                  confidence,
-                },
-                { onConflict: "user_id,indicator_id" },
-              ),
+            await requireDb().from("self_assessments").upsert(
+              {
+                user_id: s.user!.id,
+                indicator_id: skill.id,
+                assessment,
+                confidence,
+              },
+              { onConflict: "user_id,indicator_id" },
+            ),
           );
           s.refresh();
         }, "Reflection saved.");
@@ -332,6 +331,8 @@ export function Learning({ workspace = false }: { workspace?: boolean }) {
   const s = useStore(),
     { id } = useParams(),
     [q, Q] = useState("");
+  const [params] = useSearchParams();
+  const assigned = !!params.get("task");
   const skills = learningOrder(Object.values(s.skills));
   const sk = skills.find((x) => x.id === id);
   const content =
@@ -345,9 +346,9 @@ export function Learning({ workspace = false }: { workspace?: boolean }) {
       />
     ) : sk ? (
       <>
-        <Link className="back" to="/learning">
+        <Link className="back" to={assigned ? "/plan" : "/learning"}>
           <ChevronLeft size={16} />
-          Learning library
+          {assigned ? "My learning plan" : "Learning library"}
         </Link>
         <div className="overline">
           {sk.cluster} / {sk.specificSkill}

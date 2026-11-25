@@ -321,14 +321,12 @@ function Review({ item, done }: { item: Evidence; done: () => void }) {
         e.preventDefault();
         job.run(async () => {
           check(
-            await requireDb()
-              .from("reviews")
-              .insert({
-                evidence_id: item.id,
-                reviewer_id: s.user!.id,
-                decision,
-                feedback: feedback.trim(),
-              }),
+            await requireDb().from("reviews").insert({
+              evidence_id: item.id,
+              reviewer_id: s.user!.id,
+              decision,
+              feedback: feedback.trim(),
+            }),
           );
           done();
           s.refresh();
@@ -371,7 +369,7 @@ export function Staff() {
     [busy, B] = useState(true),
     [rev, R] = useState(0);
   const curator = s.roles.includes("curator"),
-    reviewer = s.roles.includes("reviewer");
+    reviewer = s.roles.includes("reviewer") || s.roles.includes("teacher");
   useEffect(() => {
     let valid = true;
     const client = requireDb();

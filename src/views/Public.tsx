@@ -60,7 +60,7 @@ export function Landing() {
         <div className="hero-copy">
           <div className="overline">
             <span className="tiny-rule" />
-            Campus intelligence platform
+            Agile curriculum platform
           </div>
           <h1>
             From learning
@@ -68,19 +68,20 @@ export function Landing() {
             <em>to opportunity.</em>
           </h1>
           <p>
-            Find opportunities that fit your goals. See what you can demonstrate
-            and what to learn next.
+            Turn industry needs into course practice. Work on an individual
+            task, submit evidence and use teacher feedback to develop your next
+            skill.
           </p>
           <div className="hero-buttons">
-            <Link className="btn primary" to="/opportunities">
-              <Compass size={18} />
-              Explore opportunities
-            </Link>
             <Link
-              className="btn secondary"
+              className="btn primary"
               to={s.user ? "/overview" : "/sign-in"}
             >
-              {s.user ? "Open dashboard" : "Student sign in"}
+              <GraduationCap size={18} />
+              {s.user ? "Open workspace" : "Sign in to your workspace"}
+            </Link>
+            <Link className="btn secondary" to="/opportunities">
+              Explore opportunities
             </Link>
           </div>
         </div>
@@ -100,6 +101,39 @@ export function Landing() {
             </div>
           </figcaption>
         </figure>
+      </section>
+      <section id="how-it-works" className="wrap how">
+        <div className="section-head">
+          <h2>How CHAMPUS works</h2>
+        </div>
+        <div className="how-grid">
+          {[
+            [
+              Compass,
+              "Industry identifies a need",
+              "Partners describe a current workplace task and the skill it needs.",
+            ],
+            [
+              CheckCheck,
+              "Teachers shape the task",
+              "Teachers connect the need to a course outcome and a learner in that program.",
+            ],
+            [
+              BookOpen,
+              "Students demonstrate a skill",
+              "Students practise, submit work and use feedback on a specific indicator.",
+            ],
+          ].map(([Icon, title, body]) => {
+            const I = Icon as typeof Compass;
+            return (
+              <section key={String(title)}>
+                <I size={24} />
+                <h3>{String(title)}</h3>
+                <p>{String(body)}</p>
+              </section>
+            );
+          })}
+        </div>
       </section>
       <section className="explore-band">
         <div className="wrap">
@@ -135,39 +169,6 @@ export function Landing() {
                 text="Check again when the next listings are published."
               />
             ))}
-        </div>
-      </section>
-      <section id="how-it-works" className="wrap how">
-        <div className="section-head">
-          <h2>How CHAMPUS works</h2>
-        </div>
-        <div className="how-grid">
-          {[
-            [
-              Compass,
-              "Find an opportunity",
-              "Check the organizer, closing date and entry requirements.",
-            ],
-            [
-              CheckCheck,
-              "Understand your readiness",
-              "See which conditions you meet and which skills have reviewed evidence.",
-            ],
-            [
-              BookOpen,
-              "Take the next step",
-              "Open a practice resource, submit your work or visit the official application.",
-            ],
-          ].map(([Icon, title, body]) => {
-            const I = Icon as typeof Compass;
-            return (
-              <section key={String(title)}>
-                <I size={24} />
-                <h3>{String(title)}</h3>
-                <p>{String(body)}</p>
-              </section>
-            );
-          })}
         </div>
       </section>
     </main>

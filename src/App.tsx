@@ -1,3 +1,5 @@
+import { Curriculum } from "./views/Curriculum";
+import { Settings, WorkspaceSearch, useAppearance } from "./views/Preferences";
 import { useEffect } from "react";
 import {
   BrowserRouter,
@@ -22,6 +24,7 @@ function Private({ children }: { children: React.ReactNode }) {
   );
 }
 function Pages() {
+  useAppearance();
   const loc = useLocation();
   useEffect(() => {
     if (loc.hash === "#how-it-works") {
@@ -38,7 +41,12 @@ function Pages() {
         "/overview": "Overview | CHAMPUS",
         "/profile": "My profile | CHAMPUS",
         "/skills": "Skill development | CHAMPUS",
-        "/staff": "Staff workspace | CHAMPUS",
+        "/staff": "Review and curation | CHAMPUS",
+        "/teacher": "Teaching studio | CHAMPUS",
+        "/industry": "Industry desk | CHAMPUS",
+        "/settings": "Settings | CHAMPUS",
+        "/plan": "My learning plan | CHAMPUS",
+        "/search": "Workspace search | CHAMPUS",
       }[loc.pathname] || "CHAMPUS";
   }, [loc.pathname, loc.hash]);
   return (
@@ -48,6 +56,46 @@ function Pages() {
       </a>
       <Header />
       <Routes>
+        <Route
+          path="/teacher"
+          element={
+            <Private>
+              <Curriculum role="teacher" />
+            </Private>
+          }
+        />
+        <Route
+          path="/industry"
+          element={
+            <Private>
+              <Curriculum role="industry" />
+            </Private>
+          }
+        />
+        <Route
+          path="/plan"
+          element={
+            <Private>
+              <Curriculum role="student" />
+            </Private>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <Private>
+              <Settings />
+            </Private>
+          }
+        />
+        <Route
+          path="/search"
+          element={
+            <Private>
+              <WorkspaceSearch />
+            </Private>
+          }
+        />
         <Route path="/" element={<Landing />} />
         <Route path="/opportunities" element={<Opportunities />} />
         <Route path="/opportunities/:id" element={<Detail />} />

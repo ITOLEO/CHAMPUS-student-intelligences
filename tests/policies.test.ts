@@ -34,6 +34,7 @@ before(async () => {
   for (const filename of [
     "202611240001_champus.sql",
     "202611240002_catalog.sql",
+    "202611250001_agile_curriculum.sql",
   ])
     await db.exec(await readFile("supabase/migrations/" + filename, "utf8"));
   for (const id of [student, peer, reviewer, curator, external])
@@ -219,4 +220,63 @@ test("publication, source checks, revision changes and withdrawal are enforced i
   ]);
   await actor(null);
   assert.equal(await count("select * from opportunities where id=$1", [id]), 0);
+});
+
+test("a partner need becomes course-scoped practice, evidence and private feedback", async () => {
+  await db.exec("reset role");
+  await db.query("update profiles set institution_id='pib' where user_id=$1", [
+    peer,
+  ]);
+  await db.query(
+    "insert into staff_roles values ($1,'pib','industry'),($2,'pib','teacher')",
+    [curator, peer],
+  );
+  const roster = (
+    await db.query<{ id: string }>(
+      "insert into teaching_roster(institution_id,teacher_id,student_id,program,course,student_label) values('pib',$1,$2,'Arts','Kitchen','Learner') returning id",
+      [peer, student],
+    )
+  ).rows[0].id;
+  await actor(curator);
+  const need = (
+    await db.query<{ id: string }>(
+      "insert into industry_needs(institution_id,title,context,indicator_id) values('pib','Plating','Visible focal point',$1) returning id",
+      [indicator],
+    )
+  ).rows[0].id;
+  assert.equal(await count("select * from teaching_roster"), 0);
+  await actor(peer);
+  const task = (
+    await db.query<{ id: string }>(
+      "insert into curriculum_tasks(institution_id,roster_id,need_id,indicator_id,title,outcome,brief) values('pib',$1,$2,$3,'Practice','Plate composition','Submit a photo') returning id",
+      [roster, need, indicator],
+    )
+  ).rows[0].id;
+  await actor(student);
+  assert.equal(await count("select * from curriculum_tasks"), 1);
+  await db.query(
+    "insert into learning_preferences(user_id,personality_type,work_style) values(auth.uid(),'INTJ','Plan')",
+  );
+  const evidence = (
+    await db.query<{ id: string }>(
+      "insert into evidence(user_id,institution_id,indicator_id,title,description,link,task_id) values(auth.uid(),'pib',$1,'Photo','Focal point','https://example.org/practice',$2) returning id",
+      [indicator, task],
+    )
+  ).rows[0].id;
+  await actor(peer);
+  assert.equal(await count("select * from learning_preferences"), 0);
+  assert.equal(
+    await count("select * from evidence where id=$1", [evidence]),
+    1,
+  );
+  await db.query(
+    "insert into reviews(evidence_id,reviewer_id,decision,feedback) values($1,auth.uid(),'Verified','Focal point visible')",
+    [evidence],
+  );
+  await actor(curator);
+  assert.equal(await count("select * from curriculum_tasks"), 0);
+  assert.equal(
+    await count("select * from evidence where id=$1", [evidence]),
+    0,
+  );
 });

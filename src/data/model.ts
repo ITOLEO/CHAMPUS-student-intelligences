@@ -35,6 +35,7 @@ export type Profile = {
   goals: string;
 };
 export type Evidence = {
+  task_id?: string | null;
   id: string;
   user_id: string;
   indicator_id: string;

@@ -1,63 +1,25 @@
+import { Curriculum, Preference } from "./Curriculum";
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import { BookOpen, Bookmark, Compass, FileCheck2 } from "lucide-react";
-import { Card, CatalogState, Empty, Notice } from "../components/Layout";
+import { Link, Navigate } from "react-router-dom";
+import { FileCheck2 } from "lucide-react";
+import { Notice } from "../components/Layout";
 import { useStore, useBusy } from "../data/store";
 import { check, requireDb } from "../data/client";
-import { recommended } from "../recommendation/recommendationEngine";
+
 import { EvidenceList } from "./Skills";
 export function Overview() {
   const s = useStore();
-  const rows = recommended(s.listings, s.profile).slice(0, 3);
+  if (s.roles.includes("teacher")) return <Navigate replace to="/teacher" />;
+  if (s.roles.includes("industry")) return <Navigate replace to="/industry" />;
   return (
     <>
-      <p className="overline">Student workspace</p>
-      <h1 className="page-title">
-        {s.profile.name ? "Welcome, " + s.profile.name : "Overview"}
-      </h1>
-      <div className="action-strip">
-        <Link to="/opportunities">
-          <Compass />
-          Find opportunities
-        </Link>
-        <Link to="/opportunities?saved=1">
-          <Bookmark />
-          Saved opportunities
-        </Link>
-        <Link to="/skills">
-          <BookOpen />
-          Develop a skill
-        </Link>
-      </div>
-      <div className="section-head">
-        <h2>Opportunities to explore</h2>
-        <Link to="/opportunities">View all</Link>
-      </div>
-      <CatalogState />
-      {rows.length ? (
-        <div className="card-grid">
-          {rows.map((r) => (
-            <Card row={r} key={r.id} />
-          ))}
-        </div>
-      ) : (
-        !s.catalogError &&
-        !s.catalogLoading && (
-          <Empty
-            title="No open opportunities"
-            text="Published opportunities appear here while they are open."
-          />
-        )
-      )}
+      <Curriculum role="student" />
       <section className="panel">
-        <h2>Latest evidence</h2>
+        <h2>Recent evidence</h2>
         {s.evidence.length ? (
-          <EvidenceList rows={s.evidence.slice(0, 2)} />
+          <EvidenceList rows={s.evidence.slice(0, 3)} />
         ) : (
-          <>
-            <p>Choose an indicator and submit your first piece of work.</p>
-            <Link to="/skills">Browse skills</Link>
-          </>
+          <Link to="/skills">Choose a skill to demonstrate</Link>
         )}
       </section>
     </>
@@ -75,6 +37,7 @@ export function Profile() {
       <p className="lede">
         Use interests and goals to find relevant opportunities.
       </p>
+      <Preference />
       <form
         className="form panel"
         onSubmit={(e) => {

@@ -1,8 +1,14 @@
+import { useAppearance, saveSetting } from "../views/Preferences";
 import { illustration } from "../data/assets";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, NavLink, Navigate, useLocation } from "react-router-dom";
 import {
   BookOpen,
+  Search,
+  Settings,
+  Building2,
+  PanelLeft,
+  ListChecks,
   Bookmark,
   CalendarDays,
   Check,
@@ -61,6 +67,26 @@ export function Header() {
           <Link to="/#how-it-works">How it works</Link>
         </nav>
         <div className="nav-actions">
+          {user && (
+            <Link
+              to="/search"
+              aria-label="Search workspace"
+              title="Search workspace"
+              className="icon-btn"
+            >
+              <Search size={17} />
+            </Link>
+          )}
+          {user && (
+            <Link
+              to="/settings"
+              aria-label="Website settings"
+              title="Website settings"
+              className="icon-btn"
+            >
+              <Settings size={17} />
+            </Link>
+          )}
           <Link className="btn nav-login" to={user ? "/overview" : "/sign-in"}>
             {user ? <LayoutDashboard size={16} /> : <LogIn size={16} />}{" "}
             {user ? "Dashboard" : "Sign in"}
@@ -174,35 +200,53 @@ export function Guard({ children }: { children: ReactNode }) {
 export function Workspace({ children }: { children: ReactNode }) {
   const s = useStore();
   const job = useBusy();
+  const rail = useAppearance();
   return (
-    <div className="work-shell">
+    <div className={"work-shell rail-" + rail}>
       <aside className="side">
-        <strong>Workspace</strong>
+        <button
+          className="text-btn rail-control"
+          title="Change navigation width"
+          aria-label="Change navigation width"
+          onClick={() =>
+            saveSetting("rail", rail === "expanded" ? "collapsed" : "expanded")
+          }
+        >
+          <PanelLeft />
+          <span>Workspace</span>
+        </button>
         <nav aria-label="Student workspace">
-          <NavLink to="/overview">
-            <LayoutDashboard />
-            Overview
-          </NavLink>
-          <NavLink to="/profile">
-            <UserRound />
-            My profile
-          </NavLink>
-          <NavLink to="/opportunities">
-            <Compass />
-            Opportunities
-          </NavLink>
-          <NavLink to="/skills">
-            <BookOpen />
-            Skill development
-          </NavLink>
-          {s.roles.length > 0 && (
-            <NavLink to="/staff">
-              <ShieldCheck />
-              Staff workspace
+          {(
+            [
+              ["/overview", "Overview", LayoutDashboard],
+              ["/plan", "Learning plan", ListChecks],
+              ["/profile", "My profile", UserRound],
+              ["/skills", "Skill development", BookOpen],
+              ["/opportunities", "Opportunities", Compass],
+              ...(s.roles.includes("teacher")
+                ? [["/teacher", "Teaching studio", GraduationCap]]
+                : []),
+              ...(s.roles.includes("industry")
+                ? [["/industry", "Industry desk", Building2]]
+                : []),
+              ...(s.roles.some((r) =>
+                ["curator", "teacher", "reviewer"].includes(r),
+              )
+                ? [["/staff", "Review and curation", ShieldCheck]]
+                : []),
+              ["/search", "Search", Search],
+              ["/settings", "Settings", Settings],
+            ] as [string, string, typeof BookOpen][]
+          ).map(([to, label, Icon]) => (
+            <NavLink key={to} to={to} aria-label={label} title={label}>
+              <Icon />
+              <span>{label}</span>
             </NavLink>
-          )}
+          ))}
         </nav>
         <button
+          aria-label="Sign out"
+          title="Sign out"
           className="text-btn signout"
           onClick={() =>
             job.run(async () => {
@@ -212,7 +256,7 @@ export function Workspace({ children }: { children: ReactNode }) {
           }
         >
           <LogOut size={17} />
-          Sign out
+          <span>Sign out</span>
         </button>
         {job.message && <Notice>{job.message}</Notice>}
       </aside>
