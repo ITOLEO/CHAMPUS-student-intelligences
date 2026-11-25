@@ -194,14 +194,10 @@ test("managed accounts, curriculum, partner briefs, recommendations and access b
       "10000000-0000-4000-8000-000000000003",
     ];
     for (const [i, role] of ["student", "campus", "industry"].entries()) {
-      await query(
-        "insert into auth.users(id,email,raw_app_meta_data) values($1,$2,$3)",
-        [
-          ids[i],
-          role + "-demo+" + runId + "@preview.champus.invalid",
-          JSON.stringify({ champus_demo: { run: runId, role } }),
-        ],
-      );
+      await db.transaction(async (tx) => {
+        await tx.query("insert into auth.users(id,email) values($1,$2)", [ids[i], role + "-demo+" + runId + "@preview.champus.invalid"]);
+        await tx.query("update auth.users set raw_app_meta_data=$2 where id=$1", [ids[i], JSON.stringify({ champus_demo: { run: runId, role } })]);
+      });
     }
     await db.exec("set role service_role");
     await query("select seed_demo($1)", [runId]);
