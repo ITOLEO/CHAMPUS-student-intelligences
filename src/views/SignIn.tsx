@@ -6,17 +6,12 @@ import { safeReturn } from "../data/model";
 import { useBusy, useStore } from "../data/store";
 import { Notice } from "../components/Layout";
 
-type Mode = "password" | "email" | "reset";
+type Mode = "password" | "reset";
 const modes = {
   password: {
     heading: "Sign in to CHAMPUS",
     instructions: "Enter your email and password.",
     action: "Sign in",
-  },
-  email: {
-    heading: "Sign in with email",
-    instructions: "We’ll send a secure sign-in link to your inbox.",
-    action: "Send sign-in link",
   },
   reset: {
     heading: "Reset your password",
@@ -79,15 +74,9 @@ export function SignIn() {
       const redirect = new URL("/sign-in", window.location.origin);
       redirect.searchParams.set("next", next);
       if (mode === "reset") redirect.searchParams.set("flow", "recovery");
-      const { error } =
-        mode === "reset"
-          ? await client.auth.resetPasswordForEmail(address, {
-              redirectTo: redirect.href,
-            })
-          : await client.auth.signInWithOtp({
-              email: address,
-              options: { emailRedirectTo: redirect.href },
-            });
+      const { error } = await client.auth.resetPasswordForEmail(address, {
+        redirectTo: redirect.href,
+      });
       if (error) throw error;
       setSent(true);
     });
@@ -104,7 +93,7 @@ export function SignIn() {
               ? user.email
               : sent
                 ? "Check the inbox for the address you entered."
-                : "Use the email associated with your institution or partner account."}
+                : "Your campus administrator creates your account. Use the email and password they gave you."}
           </p>
         </div>
         <div className="auth-action">
@@ -118,17 +107,8 @@ export function SignIn() {
           ) : sent ? (
             <div className="sent-actions">
               <p>
-                {mode === "reset" ? (
-                  <>
-                    If an account exists for <strong>{email.trim()}</strong>,
-                    you’ll receive a reset link.
-                  </>
-                ) : (
-                  <>
-                    Open the sign-in link sent to{" "}
-                    <strong>{email.trim()}</strong>.
-                  </>
-                )}
+                If an account exists for <strong>{email.trim()}</strong>, you’ll
+                receive a password reset link.
               </p>
               <a
                 className="btn primary"
@@ -220,7 +200,7 @@ export function SignIn() {
               </div>
             </form>
           )}
-          {db && !sent && !settingPassword && (!recovery || !authLoading) && (
+          {db && !sent && !settingPassword && mode === "reset" && (
             <div className="auth-method">
               <button
                 type="button"
@@ -230,14 +210,10 @@ export function SignIn() {
                     navigate("/sign-in?next=" + encodeURIComponent(next), {
                       replace: true,
                     });
-                  chooseMode(
-                    mode === "password" && !recovery ? "email" : "password",
-                  );
+                  chooseMode("password");
                 }}
               >
-                {mode === "password" && !recovery
-                  ? "Use an email link instead"
-                  : "Back to password sign-in"}
+                Back to password sign-in
               </button>
             </div>
           )}

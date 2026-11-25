@@ -44,11 +44,14 @@ function CategoryFilters({
   );
 }
 // The guide uses the same instructions as each feature's public detail page.
-const guideFeatures = featureGroups.flatMap((group) =>
-  group.features.filter((feature) =>
-    ["industry-needs", "course-practice", "learning-plan"].includes(feature.id),
-  ),
-);
+const features = featureGroups.flatMap((group) => group.features);
+const guideFeatures = [
+  "industry-needs",
+  "course-practice",
+  "learning-plan",
+  "student-advisor",
+  "campus-guidance",
+].map((id) => features.find((feature) => feature.id === id)!);
 
 function WorkflowGuide() {
   const [selected, setSelected] = useState(guideFeatures[0]);
@@ -89,11 +92,7 @@ function WorkflowGuide() {
               <li key={step}>{step}</li>
             ))}
           </ol>
-          <Link
-            replace
-            className="feature-action"
-            to={featurePath(selected.id)}
-          >
+          <Link className="feature-action" to={featurePath(selected.id)}>
             <ListChecks size={17} /> Explore {selected.title}
           </Link>
         </div>
@@ -127,15 +126,15 @@ export function Landing() {
             <em>to opportunity.</em>
           </h1>
           <p className="landing-lede">
-            Turn industry needs into course practice. Build evidence of what
-            students can do.
+            Connect a workplace need to your course. Practise it through a
+            project that fits your goal, then use lecturer feedback to improve.
           </p>
           <div className="hero-buttons">
-            <Link replace className="btn primary" to="/sign-in">
+            <Link className="btn primary" to="/sign-in">
               <GraduationCap size={18} /> Sign in to your workspace
             </Link>
-            <Link replace className="view-all" to="/opportunities">
-              Explore opportunities
+            <Link className="view-all" to="/programs">
+              Explore the course guide
             </Link>
           </div>
         </div>
@@ -147,14 +146,15 @@ export function Landing() {
             <p>
               Partners describe changes in the workplace. Teachers connect those
               needs to course outcomes. Students practise, submit evidence, and
-              learn from feedback.
+              learn from feedback. A student can ask the AI advisor for a next
+              step and choose which suggestion to discuss with their lecturer.
             </p>
           </div>
           <nav className="workspace-index" aria-label="Explore workspaces">
             {featureGroups.map(({ id, title, features }) => {
               const Icon = features[0].icon;
               return (
-                <Link key={id} replace to={featurePath(features[0].id)}>
+                <Link key={id} to={featurePath(features[0].id)}>
                   <Icon size={23} />
                   {title}
                 </Link>
@@ -174,20 +174,12 @@ export function Landing() {
                   </p>
                   <h2>{primary.title}</h2>
                   <p>{primary.description}</p>
-                  <Link
-                    replace
-                    className="feature-action"
-                    to={featurePath(primary.id)}
-                  >
+                  <Link className="feature-action" to={featurePath(primary.id)}>
                     Explore {primary.title}
                   </Link>
                   <div className="chapter-links">
                     {related.map((feature) => (
-                      <Link
-                        replace
-                        key={feature.id}
-                        to={featurePath(feature.id)}
-                      >
+                      <Link key={feature.id} to={featurePath(feature.id)}>
                         {feature.title}
                       </Link>
                     ))}
@@ -209,6 +201,32 @@ export function Landing() {
           })}
         </div>
       </section>
+      <section className="wrap start-guide" aria-labelledby="access-title">
+        <div>
+          <p className="overline">Account access</p>
+          <h2 id="access-title">Start with your campus account.</h2>
+          <p>
+            Your administrator assigns your workspace. Students receive a
+            program and cohort before they sign in. Your lecturer connects
+            practice to the courses you take.
+          </p>
+          <Link className="btn primary" to="/sign-in">
+            Sign in with a password
+          </Link>
+        </div>
+        <div>
+          <p className="overline">Program guide</p>
+          <h2>One course, different goals.</h2>
+          <p>
+            A developer can build an issue queue. A photographer can build a
+            proof gallery. Both can demonstrate the same web development
+            outcome. Explore nine BIZAI practice guides and the campus programs.
+          </p>
+          <Link className="feature-action" to="/programs">
+            Explore programs and courses
+          </Link>
+        </div>
+      </section>
       <WorkflowGuide />
       <section className="explore-band">
         <div className="wrap">
@@ -220,7 +238,7 @@ export function Landing() {
               </p>
               <h2>Explore opportunities</h2>
             </div>
-            <Link replace className="view-all" to="/opportunities">
+            <Link className="view-all" to="/opportunities">
               View all opportunities
             </Link>
           </div>

@@ -66,7 +66,9 @@ test("exploring the introduction keeps the visit active and opens the selected w
   }
   assert.equal(
     doc.querySelectorAll('.landing-directory a[href^="/features/"]').length,
-    9,
+    (await import("../src/components/features")).featureGroups.flatMap(
+      (g) => g.features,
+    ).length,
   );
   const appearance = doc.querySelector<HTMLButtonElement>(
     'button[aria-label="Appearance"]',
@@ -186,7 +188,7 @@ test("a new visit starts in Light and saved settings can select Dark or System",
   assert.equal(doc.documentElement.dataset.theme, "light");
 });
 
-test("every public feature opens a dedicated page and the introduction appears once per tab", async () => {
+test("every public feature opens a dedicated page and signed-out visitors can return to the introduction", async () => {
   const { featureGroups } = await import("../src/components/features");
   for (const group of featureGroups) {
     for (const feature of group.features) {
@@ -196,7 +198,8 @@ test("every public feature opens a dedicated page and the introduction appears o
     }
   }
   await go("/welcome");
-  assert.equal(dom.window.location.pathname, "/sign-in");
+  assert.equal(dom.window.location.pathname, "/");
+  assert.ok(doc.getElementById("landing-title"));
 });
 
 test("feedback stays separate from the help menu and hover is the sidebar default", async () => {

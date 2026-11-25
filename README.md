@@ -1,77 +1,70 @@
 # CHAMPUS
 
-GOOGLEHACKATHON-PIB-BD3
+CHAMPUS connects formal courses, workplace needs and personal learning goals. A visitor opens the public introduction at the domain root. Each public feature has an explanation, a worked example, and a link to its workspace. A signed-in account opens its assigned dashboard.
 
-CHAMPUS connects a student's evidence, a development need and a real opportunity. The public site opens before account access. The signed-in workspace supports three student workflows and two limited staff tasks. The interface uses English.
+## Workspaces
 
-## Run the source
+| Workspace | Main actions |
+|---|---|
+| Student | Explore the program guide, set a goal, practise indicators, submit evidence, read reviews, discover opportunities and request guidance. |
+| Campus | Read industry needs, publish practice, assign course tasks, monitor roster progress, review evidence and learning proposals, and respond to partners. |
+| Industry | Maintain an organization profile, publish a skill need, submit project and placement briefs, and follow campus decisions. |
+| Admin | Create accounts, place students in programs and cohorts, assign enrollments, approve existing students, suspend or restore access, and inspect the account history. |
 
-Open the repository root in a terminal. Use Node.js 22.12 or later.
+Students, campus staff and partners have private AI conversations. A student can choose to share selected learning context with Gemini. They can edit a single suggestion and send it to the lecturer for an enrolled course. Only the lecturer makes the academic decision.
 
-```sh
-npm ci
-npm test
-npm run build
-npm run dev
-```
+## Run and deploy
 
-Vite serves the app on port 5173 by default. In a Codespace, open the forwarded application port. To produce the portable HTML again, run `node scripts/portable.mjs ../CHAMPUS.html`. The production web server should serve the Vite `dist` directory and use SPA fallback for application routes.
+Use Node.js 22.12 or later. Run `npm ci`, `npm test` and `npm run build` at the repository root. Use `npm run dev` for the Vite frontend. Use `vercel dev` for local development with the server API routes. Vercel builds the frontend into `dist` and runs the handlers in `api/`. A static or portable export supports the public guide. Account creation and AI chat require the server functions.
 
-## Connect Supabase
+## Activate the managed workspaces
 
-1. Open a new Supabase project for CHAMPUS. Use the SQL Editor or your standard migration runner to apply both SQL files once, in this order.
-   - `supabase/migrations/202611240001_champus.sql` creates tables, triggers, row-level policies and the private evidence bucket.
-   - `supabase/migrations/202611240002_catalog.sql` loads public institutions' course context, indicators and the initial opportunity catalog. The first migration creates the PIB institution.
-2. In Authentication, enable Email and new-user signups for the pilot. Configure an email sender that can deliver magic links to student addresses. Supabase's default sender can be restricted. Set the **Site URL** to the exact production origin. Add the trusted sign-in return URL to the redirect allow list for each intended environment. For a Vercel production site use `https://<your-domain>/sign-in**` with your exact hostname. Limit preview origins to deployments under your control. [Passwordless email](https://supabase.com/docs/guides/auth/auth-email-passwordless) · [Redirect URLs](https://supabase.com/docs/guides/auth/redirect-urls)
-3. In the Vercel project settings, enter `SUPABASE_URL` and `SUPABASE_KEY`. Set the latter to the publishable key that starts with `sb_publishable_`. The existing `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` names also work. Vite bundles each exposed variable into the frontend. Keep secret and service-role keys outside all `VITE_` variables. For private local testing, copy `.env.example` to `.env.local` and enter the local project's public values.
-4. Use the Vite framework preset, build command `npm run build` and output directory `dist`. If only the contents of **source/** go into the repository, use its root. If the entire delivery package goes into the repository, set **Root Directory** to `source`. Redeploy after changing the variables.
-5. Sign in as the first student. Choose a reviewing institution in **My profile** before submitting evidence. Uploads accept a PDF, JPEG, PNG or WebP up to 8 MiB. A reviewer requests a two-minute signed link to open private work.
+1. Apply the SQL migrations in filename order to the Supabase project for CHAMPUS. An installation with the three earlier migrations needs only the [managed platform migration](supabase/migrations/202611260001_managed_platform.sql). It changes the new-user trigger on Supabase Auth. Use a dedicated CHAMPUS Auth project, since this trigger governs account creation in that project.
+2. In Supabase Authentication, enable the Email provider and turn off **Allow new users to sign up**. Set the Site URL to the production origin. Allow the exact site’s `/sign-in**` recovery destination. Configure email delivery for password recovery. [Auth configuration](https://supabase.com/docs/guides/auth/general-configuration) · [Redirect URLs](https://supabase.com/docs/guides/auth/redirect-urls)
+3. In Vercel, set the variables below for the intended environment. Redeploy after changing them. Keep server secrets out of all `VITE_*` variables and source files.
+4. Assign the first trusted administrator using one method below. Sign in to the Admin workspace. Create each account with its email, name, initial password and role. Select the program and cohort for students. Deliver the credentials through the institution’s private channel.
+5. Under **Assign a course**, choose a student and a lecturer. Enter the actual course title. Use the title from the program guide when the enrollment covers a published practice. The lecturer can then assign coursework, review evidence and respond to a learning proposal.
 
-### Give an authorized teacher or curator access
+| Vercel variable | Use |
+|---|---|
+| `SUPABASE_URL` | The CHAMPUS project URL. |
+| `SUPABASE_KEY` | The existing Supabase publishable key. The frontend uses this value with RLS. |
+| `SUPABASE_SECRET_KEY` | Server-only Supabase secret key. The account endpoint calls Auth Admin. The AI endpoint completes its reserved conversation turn. |
+| `GEMINI_API_KEY` | Server-only credential for the Gemini API. |
+| `GEMINI_MODEL` | The model ID enabled for this key that supports `generateContent`. Use the ID without the `models/` prefix. |
 
-Verify the staff member's role and institution outside the student app. Have the staff member sign in and choose the institution. In the Supabase SQL Editor, replace the placeholder with the real authenticated user UUID. Run only the assignment that is appropriate. A reviewer evaluates work. A curator publishes opportunities. Assignment within one institution grants access only for that institution.
+The caller’s verified identity and database role determine access. The browser cannot assign a role by sending one in a request. Managed Auth creates the identity, profile, role and access event in the same database transaction. The AI endpoint reads learning context with the caller’s RLS permissions. An unavailable provider returns an explicit error. [Supabase Admin API](https://supabase.com/docs/reference/javascript/auth-admin-createuser) · [Gemini model catalog](https://ai.google.dev/gemini-api/docs/models)
 
-```sql
-insert into public.staff_roles (user_id, institution_id, role)
-values ('<staff-user-uuid>'::uuid, 'pib', 'reviewer')
-on conflict do nothing;
-```
+### First administrator
 
-For a curator, use the role value `curator`. For another institution, provision its own identifier, staff and academic sources before student use. Adding an institution does not add verified academic mappings.
-
-## Curate and verify content
-
-Use **Staff workspace** to create a draft, attach an indicator and check the organizer's source, date and rules. Publish after review. Edit against the current revision to avoid overwriting concurrent changes. Archive a withdrawn record. For a new official skill or academic mapping, add a reviewed migration. Rerunning the initial seed on a live project can conflict with existing records. The public portable snapshot can be regenerated from `src/data/catalog.json`. To regenerate the clean-install seed from the reviewed JSON, use `node scripts/seed.mjs`.
-
-## Release materials
-
-- `docs/CHAMPUS-SPEC.md` gives the requirements, references, screen behavior and student acceptance journey.
-- `docs/CATALOG-SOURCES.md` records official sources, uncertainty and the proposed PIB academic mapping.
-- `docs/VERIFICATION.md` lists local checks and live checks that need the deployed system.
-- `docs/IMAGE-SOURCES.txt` identifies the illustrative artwork.
-- `src/recommendation/recommendationEngine.ts` contains eligibility, deadlines and indicator readiness.
-- `tests/` exercises the React routes, recommendation logic and both SQL migrations.
-
-## Sign in with a password
-
-Use the Email provider in Supabase Auth. CHAMPUS accepts an existing password or a secure email link. Accounts created through an email link can use **Forgot password?** to set a password. Allow the production origin's /sign-in redirect, including the recovery query parameters, in Supabase Authentication URL Configuration.
-
-## Activate the three dashboards
-
-On an existing CHAMPUS database with both initial migrations applied, run **supabase/migrations/202611250001_agile_curriculum.sql** once. For a fresh database run all three migration files in filename order. The new migration preserves existing opportunity, profile and evidence records. Each signed-in user can access the student plan. The teacher and industry routes check assigned roles. The existing reviewer role retains its original institution-wide review rights. Use the teacher role alone for a course-scoped instructor.
-
-In Supabase SQL Editor, assign verified users who have already selected the same institution. Replace each placeholder with an actual registered account, program or course. Run the statements only for authorized participants.
+For an existing, verified institution operator, copy their Auth UUID from Supabase. Replace the placeholder in this transaction. Run it once from the SQL Editor. It promotes an existing profile at the selected institution. Review historical staff assignments when choosing the operator.
 
 ```sql
-insert into public.staff_roles (user_id,institution_id,role) values
- ('<teacher-uuid>','pib','teacher'),
- ('<partner-uuid>','pib','industry')
-on conflict do nothing;
-
-insert into public.teaching_roster
- (institution_id,teacher_id,student_id,program,course,student_label)
-values ('pib','<teacher-uuid>','<student-uuid>','<formal program>','<formal course>','<student display name>')
-on conflict do nothing;
+begin;
+do $$
+declare operator_id uuid := '<verified-auth-user-uuid>'; inst text := 'pib';
+begin
+  perform pg_advisory_xact_lock(2136739901);
+  if exists(select from public.profiles where workspace='admin') then
+    raise exception 'An administrator already exists';
+  end if;
+  update public.profiles set institution_id=inst, workspace='admin', enabled=true
+    where user_id=operator_id and (institution_id is null or institution_id=inst);
+  if not found then raise exception 'No matching campus profile'; end if;
+  insert into public.staff_roles values(operator_id,inst,'admin') on conflict do nothing;
+  insert into public.account_events(institution_id,target_id,event) values(inst,operator_id,'Bootstrapped administrator');
+end $$;
+commit;
 ```
 
-Open the industry desk and publish a need. In the teacher account, choose that need and an authorized course enrollment. Record the formal outcome, task, and observable indicator. In the student account, open the assigned task from My learning plan, then submit evidence. Review it in the teacher account. Industry accounts have no access to the roster, student personality or student submissions through the industry role.
+For a new institution operator without an Auth identity, apply the migrations first. On a trusted machine, supply the project URL and server secret in the process environment. Run `node scripts/bootstrap-admin.mjs "operator@your-institution.example" "Operator name" pib` using the actual verified email. The operator uses **Forgot password** to set their password. This method works once per installation.
+
+### Existing accounts
+
+The migration preserves existing records. It maps assigned teaching, review, curation and industry roles to their workspaces. Existing students await administrator approval. In **Account directory**, choose **Approve existing student**, then specify a program and cohort. An account without an institution requires a trusted operator to verify its owner and assign the correct institution in the SQL Editor before it appears in that directory. Suspension takes effect on subsequent protected database and API requests, including requests from existing sessions.
+
+## Academic scope
+
+The public guide includes Business Technology & AI Innovation, Culinary Arts, Hotel Management and Event Management, with cohort values 1 through 4. The nine BIZAI briefs contain practical outcomes, indicators, artifacts, sources and two career examples. They are CHAMPUS materials. Lecturers can add sourced practice for the other programs. The institution owns its official syllabi, credit rules and assessments.
+
+Read the [research and NEXORA design decisions](docs/PLATFORM-RESEARCH.md), the [academic design record](docs/AGILE-CURRICULUM.md) and the [opportunity sources](docs/CATALOG-SOURCES.md). The earlier specification and handoff describe project history. This access and deployment guide applies to the four-workspace release.

@@ -41,14 +41,16 @@ export function FeaturePage() {
           <Link
             className="btn primary"
             to={
-              feature.id === "opportunity-hub"
-                ? "/opportunities"
+              ["program-guide", "opportunity-hub"].includes(feature.id)
+                ? feature.route
                 : "/sign-in?next=" + encodeURIComponent(feature.route)
             }
           >
             {feature.id === "opportunity-hub"
               ? "Browse opportunities"
-              : "Sign in to continue"}
+              : feature.id === "program-guide"
+                ? "Open course guide"
+                : "Sign in to continue"}
             <ArrowRight size={17} />
           </Link>
         </div>
@@ -64,6 +66,16 @@ export function FeaturePage() {
             </li>
           ))}
         </ol>
+      </section>
+      <section className="feature-example">
+        <div>
+          <h2>In practice</h2>
+          <p>{feature.example}</p>
+        </div>
+        <div>
+          <h2>What you get</h2>
+          <p>{feature.result}</p>
+        </div>
       </section>
       <nav aria-label="Related features" className="feature-related">
         <h2>

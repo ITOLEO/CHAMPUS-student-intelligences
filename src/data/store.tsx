@@ -22,7 +22,11 @@ import {
   type Profile,
   type Reflection,
 } from "./model";
+import type { WorkspaceKind } from "./platform";
 type Personal = {
+  workspace: WorkspaceKind | null;
+  enabled: boolean;
+  cohort: number | null;
   profile: Profile;
   completed: string[];
   saved: string[];
@@ -33,6 +37,9 @@ type Personal = {
   institution: string;
 };
 const blank: Personal = {
+  workspace: null,
+  enabled: false,
+  cohort: null,
   profile: emptyProfile,
   completed: [],
   saved: [],
@@ -153,6 +160,9 @@ function useBuildStore() {
         (confirmations[k] ??= {})[row.rule_id] = row.answer;
       }
       const value = {
+        workspace: profile.workspace || null,
+        enabled: profile.enabled === true,
+        cohort: profile.cohort || null,
         profile,
         completed: (check(practice) || []).map((x) => x.indicator_id),
         saved: (check(s) || []).map((v) => v.opportunity_id),

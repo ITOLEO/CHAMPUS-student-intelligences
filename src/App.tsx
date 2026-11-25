@@ -1,5 +1,16 @@
+import { CourseMap } from "./views/CourseMap";
+import { Administration } from "./views/Administration";
+import { Programs } from "./views/Programs";
+import {
+  Advisor,
+  Guidance,
+  Partnerships,
+  ClassProgress,
+  Organization,
+} from "./views/Collaboration";
+import { homeFor, type WorkspaceKind } from "./data/platform";
 import { FeaturePage } from "./views/Feature";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import {
   BrowserRouter,
   HashRouter,
@@ -16,30 +27,15 @@ import { Header } from "./components/Navigation";
 import { Landing, Opportunities } from "./views/Public";
 import { SignIn } from "./views/SignIn";
 import { Detail } from "./views/Detail";
-import { Learning } from "./views/Skills";
+import { Learning, EvidenceList } from "./views/Skills";
 import { Overview, Profile } from "./views/Workspace";
 import { Staff } from "./views/Staff";
 import { Curriculum } from "./views/Curriculum";
 import { Settings, WorkspaceSearch } from "./views/Preferences";
 import { useAppearance } from "./data/appearance";
 
-const introductionKey = "champus.seen-introduction";
-
 function Home() {
   const { user, authLoading } = useStore();
-  const [showIntroduction] = useState(() => {
-    try {
-      return window.sessionStorage.getItem(introductionKey) !== "1";
-    } catch {
-      return true;
-    }
-  });
-  useEffect(() => {
-    if (authLoading || user || !showIntroduction) return;
-    try {
-      window.sessionStorage.setItem(introductionKey, "1");
-    } catch {}
-  }, [authLoading, user, showIntroduction]);
   if (authLoading)
     return (
       <main id="main" className="wrap section">
@@ -47,13 +43,15 @@ function Home() {
       </main>
     );
   if (user) return <Navigate replace to="/overview" />;
-  return showIntroduction ? <Landing /> : <Navigate replace to="/sign-in" />;
+  return <Landing />;
 }
 
 function WorkspaceFrame() {
   const { user, authLoading } = useStore();
   const { pathname } = useLocation();
-  const shared = /^\/(opportunities|learning|search|help)(\/|$)/.test(pathname);
+  const shared = /^\/(opportunities|learning|search|help|programs)(\/|$)/.test(
+    pathname,
+  );
   if (shared && !user && !authLoading) return <Outlet />;
   return (
     <Guard>
@@ -64,15 +62,44 @@ function WorkspaceFrame() {
   );
 }
 
-function StudentPage({ children }: { children: React.ReactNode }) {
-  const { roles } = useStore();
-  return roles.includes("teacher") || roles.includes("industry") ? (
-    <Navigate replace to="/overview" />
-  ) : (
+function RolePage({
+  allowed,
+  children,
+}: {
+  allowed: WorkspaceKind[];
+  children: React.ReactNode;
+}) {
+  const { workspace } = useStore();
+  return workspace && allowed.includes(workspace) ? (
     children
+  ) : (
+    <Navigate replace to={homeFor(workspace)} />
   );
 }
 
+function Portfolio() {
+  const { evidence } = useStore();
+  return (
+    <>
+      <p className="overline">Student workspace</p>
+      <h1 className="page-title">Evidence portfolio</h1>
+      <p className="lede">
+        Review submitted work, the indicator it supports and lecturer feedback.
+      </p>
+      {evidence.length ? (
+        <EvidenceList rows={evidence} />
+      ) : (
+        <section className="panel">
+          <h2>Start with course practice</h2>
+          <p>
+            Choose an indicator and submit an artifact to start your portfolio.
+          </p>
+          <Link to="/programs">Open course guide</Link>
+        </section>
+      )}
+    </>
+  );
+}
 function Help() {
   const { user } = useStore();
   const content = (
@@ -81,8 +108,9 @@ function Help() {
       <section className="panel">
         <h2>Access your workspace</h2>
         <p>
-          Open the sign-in link sent to your email. Ask your institution
-          administrator to confirm any teacher or industry access.
+          Your administrator creates your account and assigns a workspace. Sign
+          in with the email and password they give you. Use Forgot password to
+          request a reset.
         </p>
         {!user && <Link to="/sign-in">Sign in</Link>}
       </section>
@@ -125,13 +153,7 @@ function Help() {
 function Pages() {
   useAppearance();
   const { user } = useStore();
-  const { pathname, hash, key } = useLocation();
-  useEffect(() => {
-    if (!user) return;
-    try {
-      window.sessionStorage.setItem(introductionKey, "1");
-    } catch {}
-  }, [user?.id]);
+  const { pathname, hash } = useLocation();
   useEffect(() => {
     if (hash) {
       const target = document.getElementById(hash.slice(1));
@@ -152,7 +174,13 @@ function Pages() {
       "/profile": "My profile",
       "/skills": "Skill development",
       "/staff": "Review and curation",
-      "/teacher": "Teaching studio",
+      "/campus": "Campus dashboard",
+      "/admin": "Account administration",
+      "/programs": "Course guide",
+      "/advisor": "AI advisor",
+      "/guidance": "Learning guidance",
+      "/progress": "Class progress",
+      "/partnerships": "Partnerships",
       "/industry": "Industry desk",
       "/settings": "Settings",
       "/plan": "My learning plan",
@@ -181,7 +209,7 @@ function Pages() {
       </a>
       <Header />
       <Routes>
-        <Route path="/" element={<Home key={key} />} />
+        <Route path="/" element={<Home />} />
         <Route path="/welcome" element={<Navigate replace to="/" />} />
         <Route path="/features/:id" element={<FeaturePage />} />
         <Route path="/sign-in" element={<SignIn />} />
@@ -202,27 +230,114 @@ function Pages() {
           <Route path="/search" element={<WorkspaceSearch />} />
           <Route path="/help" element={<Help />} />
           <Route path="/overview" element={<Overview />} />
-          <Route path="/teacher" element={<Curriculum role="teacher" />} />
-          <Route path="/industry" element={<Curriculum role="industry" />} />
+          <Route path="/teacher" element={<Navigate replace to="/campus" />} />
+          <Route
+            path="/campus"
+            element={
+              <RolePage allowed={["campus"]}>
+                <Curriculum role="teacher" />
+              </RolePage>
+            }
+          />
+          <Route
+            path="/course-map"
+            element={
+              <RolePage allowed={["student", "campus"]}>
+                <CourseMap />
+              </RolePage>
+            }
+          />
+          <Route
+            path="/portfolio"
+            element={
+              <RolePage allowed={["student"]}>
+                <Portfolio />
+              </RolePage>
+            }
+          />
+          <Route
+            path="/organization"
+            element={
+              <RolePage allowed={["industry"]}>
+                <Organization />
+              </RolePage>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <RolePage allowed={["admin"]}>
+                <Administration />
+              </RolePage>
+            }
+          />
+          <Route path="/programs" element={<Programs />} />
+          <Route
+            path="/advisor"
+            element={
+              <RolePage allowed={["student", "campus", "industry"]}>
+                <Advisor />
+              </RolePage>
+            }
+          />
+          <Route
+            path="/guidance"
+            element={
+              <RolePage allowed={["student", "campus"]}>
+                <Guidance />
+              </RolePage>
+            }
+          />
+          <Route
+            path="/partnerships"
+            element={
+              <RolePage allowed={["campus", "industry"]}>
+                <Partnerships />
+              </RolePage>
+            }
+          />
+          <Route
+            path="/progress"
+            element={
+              <RolePage allowed={["campus"]}>
+                <ClassProgress />
+              </RolePage>
+            }
+          />
+          <Route
+            path="/industry"
+            element={
+              <RolePage allowed={["industry"]}>
+                <Curriculum role="industry" />
+              </RolePage>
+            }
+          />
           <Route
             path="/plan"
             element={
-              <StudentPage>
+              <RolePage allowed={["student"]}>
                 <Curriculum role="student" />
-              </StudentPage>
+              </RolePage>
             }
           />
           <Route
             path="/skills"
             element={
-              <StudentPage>
+              <RolePage allowed={["student"]}>
                 <Learning workspace />
-              </StudentPage>
+              </RolePage>
             }
           />
           <Route path="/settings" element={<Settings />} />
           <Route path="/profile" element={<Profile />} />
-          <Route path="/staff" element={<Staff />} />
+          <Route
+            path="/staff"
+            element={
+              <RolePage allowed={["campus"]}>
+                <Staff />
+              </RolePage>
+            }
+          />
         </Route>
         <Route
           path="*"

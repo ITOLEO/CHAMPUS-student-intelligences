@@ -1,3 +1,4 @@
+import { homeFor, programName } from "../data/platform";
 import { Avatar } from "../components/Navigation";
 import { safeWebUrl } from "../data/model";
 import { Curriculum, Preference } from "./Curriculum";
@@ -11,8 +12,8 @@ import { check, requireDb } from "../data/client";
 import { EvidenceList } from "./Skills";
 export function Overview() {
   const s = useStore();
-  if (s.roles.includes("teacher")) return <Navigate replace to="/teacher" />;
-  if (s.roles.includes("industry")) return <Navigate replace to="/industry" />;
+  if (s.workspace !== "student")
+    return <Navigate replace to={homeFor(s.workspace)} />;
   return (
     <>
       <Curriculum role="student" overview />
@@ -75,9 +76,8 @@ function ProfilePhoto() {
 export function Profile() {
   const s = useStore(),
     job = useBusy();
-  const [p, P] = useState(s.profile),
-    [school, chooseSchool] = useState(s.institution);
-  const student = !s.roles.includes("teacher") && !s.roles.includes("industry");
+  const [p, P] = useState(s.profile);
+  const student = s.workspace === "student";
   return (
     <>
       <p className="overline">Account</p>
@@ -90,17 +90,11 @@ export function Profile() {
         onSubmit={(e) => {
           e.preventDefault();
           job.run(async () => {
-            if (!s.institution && school)
-              check(
-                await requireDb().rpc("choose_institution", { inst: school }),
-              );
             check(
               await requireDb()
                 .from("profiles")
                 .update({
                   name: p.name,
-                  program: p.program,
-                  semester: p.semester,
                   interests: p.interests,
                   goals: p.goals,
                 })
@@ -113,32 +107,11 @@ export function Profile() {
         }}
       >
         <h2>Profile details</h2>
-        {s.institution ? (
-          <p>
-            <strong>Institution</strong> ·{" "}
-            {s.institutions.find((i) => i.id === s.institution)?.name ||
-              s.institution}
-          </p>
-        ) : (
-          <label>
-            Reviewing institution
-            <select
-              value={school}
-              onChange={(e) => chooseSchool(e.target.value)}
-            >
-              <option value="">Choose when ready</option>
-              {s.institutions.map((i) => (
-                <option key={i.id} value={i.id}>
-                  {i.name}
-                </option>
-              ))}
-            </select>
-            <small>
-              Choose the institution whose teachers should review your evidence.
-              An administrator can correct your choice.
-            </small>
-          </label>
-        )}
+        <p>
+          <strong>Institution</strong> ·{" "}
+          {s.institutions.find((i) => i.id === s.institution)?.name ||
+            s.institution}
+        </p>
         <label>
           Name
           <input
@@ -149,31 +122,10 @@ export function Profile() {
         </label>
         {student && (
           <>
-            <div className="form-pair">
-              <label>
-                Program
-                <input
-                  value={p.program}
-                  maxLength={160}
-                  onChange={(e) => P({ ...p, program: e.target.value })}
-                />
-              </label>
-              <label>
-                Semester
-                <input
-                  type="number"
-                  min="1"
-                  max="24"
-                  value={p.semester ?? ""}
-                  onChange={(e) =>
-                    P({
-                      ...p,
-                      semester: e.target.value ? Number(e.target.value) : null,
-                    })
-                  }
-                />
-              </label>
-            </div>
+            <p>
+              <strong>Program</strong> · {programName(p.program)} · Cohort{" "}
+              {s.cohort || "awaiting assignment"}
+            </p>
             <label>
               Interests
               <input

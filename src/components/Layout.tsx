@@ -1,3 +1,4 @@
+import { workspaceLinks } from "./workspaces";
 import { featureGroups, featurePath } from "./features";
 import { railModes } from "./Appearance";
 import { useAppearance, saveSetting } from "../data/appearance";
@@ -5,23 +6,16 @@ import { illustration } from "../data/assets";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, NavLink, Navigate, useLocation } from "react-router-dom";
 import {
-  BookOpen,
   ChevronUp,
   Settings,
-  Building2,
-  BookmarkCheck,
   PanelLeft,
-  ListChecks,
   Bookmark,
   CalendarDays,
   Check,
   Compass,
   GraduationCap,
-  LayoutDashboard,
-  ShieldCheck,
 } from "lucide-react";
 import { useStore, useBusy } from "../data/store";
-import { requireDb, check } from "../data/client";
 import { deadlineText } from "../recommendation/recommendationEngine";
 import { picture, type Listing } from "../data/model";
 
@@ -40,9 +34,7 @@ export function Footer() {
               <ul>
                 {group.features.map((feature) => (
                   <li key={feature.id}>
-                    <Link replace to={featurePath(feature.id)}>
-                      {feature.title}
-                    </Link>
+                    <Link to={featurePath(feature.id)}>{feature.title}</Link>
                   </li>
                 ))}
               </ul>
@@ -64,14 +56,10 @@ export function Footer() {
         </nav>
       )}
       <div className="footer-inner">
-        <Brand to={user ? "/overview" : "/sign-in"} />
+        <Brand to={user ? "/overview" : "/"} />
         <span>From learning to opportunity.</span>
-        <Link replace={onIntroduction} to="/opportunities">
-          Opportunities
-        </Link>
-        <Link replace={onIntroduction} to="/learning">
-          Learning library
-        </Link>
+        <Link to="/opportunities">Opportunities</Link>
+        <Link to="/learning">Learning library</Link>
       </div>
     </footer>
   );
@@ -154,36 +142,31 @@ export function Guard({ children }: { children: ReactNode }) {
         <Notice>Loading your workspace…</Notice>
       </main>
     );
+  if (!s.workspace || !s.enabled)
+    return (
+      <main id="main" className="wrap section">
+        <Empty
+          title="Account needs administrator access"
+          text="Ask your campus administrator to activate your account and assign the correct workspace. If you already have access, ask them to check the managed-account database setup."
+          action={
+            <button className="btn secondary" onClick={s.refresh}>
+              Check access again
+            </button>
+          }
+        />
+      </main>
+    );
   return <>{children}</>;
 }
 export function Workspace({ children }: { children: ReactNode }) {
   const s = useStore();
   const rail = useAppearance();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const teacher = s.roles.includes("teacher");
-  const industry = s.roles.includes("industry");
-  const reviewer = s.roles.some(
-    (role) => role === "reviewer" || role === "curator",
+  const links = workspaceLinks[s.workspace!].filter(
+    ([path]) =>
+      path !== "/staff" ||
+      s.roles.some((role) => ["teacher", "reviewer", "curator"].includes(role)),
   );
-  const home = teacher ? "/teacher" : industry ? "/industry" : "/overview";
-  const links: [string, string, typeof BookOpen][] = [
-    [
-      home,
-      teacher ? "Teaching studio" : industry ? "Industry desk" : "Overview",
-      LayoutDashboard,
-    ],
-  ];
-  if (teacher || reviewer)
-    links.push(["/staff", "Review and curation", ShieldCheck]);
-  if (teacher && industry)
-    links.push(["/industry", "Industry desk", Building2]);
-  if (!teacher && !industry)
-    links.push(
-      ["/plan", "Learning plan", ListChecks],
-      ["/skills", "Skill development", BookOpen],
-      ["/opportunities", "Opportunities", Compass],
-      ["/opportunities?saved=1", "Saved opportunities", BookmarkCheck],
-    );
   const location = useLocation();
   const [railMenu, setRailMenu] = useState(false);
   const controls = useRef<HTMLDivElement>(null);
@@ -364,7 +347,6 @@ export function SaveButton({
         </button>
       ) : (
         <Link
-          replace={loc.pathname === "/"}
           className={cls}
           aria-label="Sign in to save opportunity"
           title="Sign in to save opportunity"
@@ -384,14 +366,13 @@ export function SaveButton({
   );
 }
 export function Card({ row }: { row: Listing }) {
-  const onIntroduction = useLocation().pathname === "/";
   const o = row.data,
     photo = picture(o.id);
   return (
     <article className="opp-card">
       <Link
         className="card-img"
-        replace={onIntroduction}
+
         to={"/opportunities/" + row.id}
         aria-label={"View " + o.title}
       >
@@ -407,9 +388,7 @@ export function Card({ row }: { row: Listing }) {
       <div className="card-copy">
         <div className="card-org">{o.organization}</div>
         <h3>
-          <Link replace={onIntroduction} to={"/opportunities/" + row.id}>
-            {o.title}
-          </Link>
+          <Link to={"/opportunities/" + row.id}>{o.title}</Link>
         </h3>
         <p>{o.summary}</p>
         <div className="card-foot">

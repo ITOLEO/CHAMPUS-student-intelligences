@@ -1,3 +1,4 @@
+import { workspaceNames } from "../data/platform";
 import { ThemeChoices } from "./Appearance";
 import { useAppearance } from "../data/appearance";
 import { requireDb } from "../data/client";
@@ -132,27 +133,20 @@ function LocalClock() {
 
 export function Header() {
   useAppearance();
-  const { user, profile, roles } = useStore();
+  const { user, profile, workspace: kind } = useStore();
   const job = useBusy();
   const location = useLocation();
   const navigate = useNavigate();
   const workspace = !!user;
-  const atIntroduction = location.pathname === "/";
-  const role = roles.includes("teacher")
-    ? "Teacher"
-    : roles.includes("industry")
-      ? "Industry partner"
-      : "Student";
-  const workspaceRole =
-    location.pathname === "/industry" && roles.includes("industry")
-      ? "Industry partner"
-      : role;
+  const role = kind ? workspaceNames[kind] : "Account";
   const RoleIcon =
-    workspaceRole === "Industry partner"
+    kind === "industry"
       ? BriefcaseBusiness
-      : workspaceRole === "Teacher"
+      : kind === "campus"
         ? GraduationCap
-        : BookOpen;
+        : kind === "admin"
+          ? Settings
+          : BookOpen;
   const theme = useRef<HTMLButtonElement>(null);
   const [popup, setPopup] = useState<Popup | null>(null);
   const [query, setQuery] = useState("");
@@ -163,6 +157,18 @@ export function Header() {
   const searchButton = useRef<HTMLButtonElement>(null);
   const header = useRef<HTMLElement>(null);
   const hoverOpened = useRef(false);
+  useEffect(() => {
+    if (popup !== "features") return;
+    function position() {
+      const anchor = features.current?.getBoundingClientRect();
+      if (!anchor || !header.current) return;
+      header.current.style.setProperty("--feature-left", anchor.left + "px");
+      header.current.style.setProperty("--feature-top", anchor.bottom + "px");
+    }
+    position();
+    window.addEventListener("resize", position);
+    return () => window.removeEventListener("resize", position);
+  }, [popup]);
 
   useEffect(() => {
     setPopup(null);
@@ -210,10 +216,7 @@ export function Header() {
       className={workspace ? "global workspace-header" : "global public-header"}
     >
       <div className="bar">
-        <Brand
-          compact
-          to={user ? "/overview" : location.pathname === "/" ? "/" : "/sign-in"}
-        />
+        <Brand compact to={user ? "/overview" : "/"} />
         {!workspace && (
           <nav aria-label="Main navigation" className="marketing-nav">
             <div
@@ -269,12 +272,8 @@ export function Header() {
               >
                 <div className="features-inner">
                   <div className="mobile-destinations">
-                    <Link replace={atIntroduction} to="/opportunities">
-                      Opportunities
-                    </Link>
-                    <Link replace={atIntroduction} to="/learning">
-                      Learning library
-                    </Link>
+                    <Link to="/opportunities">Opportunities</Link>
+                    <Link to="/learning">Learning library</Link>
                   </div>
                   {featureGroups.map((group) => (
                     <section className="feature-column" key={group.title}>
@@ -283,7 +282,6 @@ export function Header() {
                         const Icon = item.icon;
                         return (
                           <Link
-                            replace={atIntroduction}
                             key={item.id}
                             className="feature-menu-link"
                             to={featurePath(item.id)}
@@ -303,18 +301,10 @@ export function Header() {
                 </div>
               </div>
             </div>
-            <Link
-              replace={atIntroduction}
-              className="nav-text marketing-link"
-              to="/opportunities"
-            >
+            <Link className="nav-text marketing-link" to="/opportunities">
               Opportunities
             </Link>
-            <Link
-              replace={atIntroduction}
-              className="nav-text marketing-link"
-              to="/learning"
-            >
+            <Link className="nav-text marketing-link" to="/learning">
               Learning library
             </Link>
           </nav>
@@ -325,12 +315,7 @@ export function Header() {
               /
             </span>
             <RoleIcon size={17} aria-hidden="true" />
-            <span>
-              {workspaceRole === "Industry partner"
-                ? "Industry"
-                : workspaceRole}{" "}
-              workspace
-            </span>
+            <span>{role} workspace</span>
           </span>
         )}
         <div className="nav-actions">
@@ -338,7 +323,6 @@ export function Header() {
             <LocalClock />
           ) : (
             <Link
-              replace={atIntroduction}
               className="nav-text desktop-feedback"
               to="/help#feedback"
               aria-label="Feedback"
@@ -414,25 +398,13 @@ export function Header() {
                     </div>
                   </div>
                   <div className="account-section">
-                    <Link
-                      replace={atIntroduction}
-                      to="/overview"
-                      onClick={() => setPopup(null)}
-                    >
+                    <Link to="/overview" onClick={() => setPopup(null)}>
                       <LayoutDashboard size={17} /> Dashboard
                     </Link>
-                    <Link
-                      replace={atIntroduction}
-                      to="/profile"
-                      onClick={() => setPopup(null)}
-                    >
+                    <Link to="/profile" onClick={() => setPopup(null)}>
                       <UserRound size={17} /> My profile
                     </Link>
-                    <Link
-                      replace={atIntroduction}
-                      to="/settings"
-                      onClick={() => setPopup(null)}
-                    >
+                    <Link to="/settings" onClick={() => setPopup(null)}>
                       <Settings size={17} /> Settings
                     </Link>
                   </div>
@@ -467,18 +439,14 @@ export function Header() {
               )}
             </>
           ) : (
-            <Link
-              replace={atIntroduction}
-              className="btn primary nav-login"
-              to="/sign-in"
-            >
+            <Link className="btn primary nav-login" to="/sign-in">
               <LogIn size={16} />
               <span>Sign in</span>
             </Link>
           )}
           {popup === "help" && (
             <div className="header-popup" id="header-help">
-              <Link replace={atIntroduction} to="/help">
+              <Link to="/help">
                 <CircleHelp size={17} /> Help center
               </Link>
             </div>
@@ -495,7 +463,6 @@ export function Header() {
                     (query.trim()
                       ? "?" + new URLSearchParams({ q: query.trim() })
                       : ""),
-                  { replace: atIntroduction },
                 );
               }}
             >

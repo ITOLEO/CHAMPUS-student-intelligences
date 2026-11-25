@@ -1,3 +1,5 @@
+import { workspaceLinks } from "../components/workspaces";
+import { featureGroups, featurePath } from "../components/features";
 import { setting, saveSetting, useAppearance } from "../data/appearance";
 import { railModes, ThemeChoices } from "../components/Appearance";
 import { Link, useSearchParams } from "react-router-dom";
@@ -74,11 +76,14 @@ export function WorkspaceSearch() {
           ["Settings", "/settings"],
         ]
       : []),
-    ...(s.user && !s.roles.includes("teacher") && !s.roles.includes("industry")
-      ? [["My learning plan", "/plan"]]
-      : []),
-    ...(s.roles.includes("teacher") ? [["Teaching studio", "/teacher"]] : []),
-    ...(s.roles.includes("industry") ? [["Industry desk", "/industry"]] : []),
+    ...(s.workspace
+      ? workspaceLinks[s.workspace].map(([path, name]) => [name, path])
+      : [
+          ["Program and course guide", "/programs"],
+          ...featureGroups.flatMap((g) =>
+            g.features.map((f) => [f.title, featurePath(f.id)]),
+          ),
+        ]),
     ...Object.values(s.skills).map((k) => [k.title, "/learning/" + k.id]),
     ...s.listings.map((r) => [r.data.title, "/opportunities/" + r.id]),
   ].filter(([name]) => name.toLowerCase().includes(q.trim().toLowerCase()));

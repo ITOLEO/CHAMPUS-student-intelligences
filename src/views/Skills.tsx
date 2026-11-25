@@ -406,7 +406,9 @@ export function Learning({ workspace = false }: { workspace?: boolean }) {
                 </button>
               </Notice>
             )}
-            {s.user && !s.accountLoading && !s.accountError ? (
+            {s.workspace === "student" &&
+            !s.accountLoading &&
+            !s.accountError ? (
               <>
                 <Practice skill={sk} />
                 {s.institution ? (
@@ -415,10 +417,10 @@ export function Learning({ workspace = false }: { workspace?: boolean }) {
                   <div className="panel">
                     <h2>Submit evidence</h2>
                     <p>
-                      Choose the institution whose teachers can review your
-                      work.
+                      Ask your administrator to assign your institution before
+                      submitting work.
                     </p>
-                    <Link to="/profile">Choose reviewing institution</Link>
+                    <Link to="/profile">View account profile</Link>
                   </div>
                 )}
                 <section className="panel">
@@ -465,9 +467,9 @@ export function Learning({ workspace = false }: { workspace?: boolean }) {
                 </>
               )}
             </section>
-            {s.user && !s.accountLoading && !s.accountError && (
-              <ReflectionForm key={sk.id} skill={sk} />
-            )}
+            {s.workspace === "student" &&
+              !s.accountLoading &&
+              !s.accountError && <ReflectionForm key={sk.id} skill={sk} />}
           </aside>
         </div>
       </>

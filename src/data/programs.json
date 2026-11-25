@@ -1,0 +1,202 @@
+[
+  {
+    "id": "bizai",
+    "title": "Business Technology & AI Innovation",
+    "curriculumBasis": "CHAMPUS groups practice into nine subjects for the PIB pilot. Your lecturer confirms the official syllabus and credit requirements.",
+    "practiceBasis": "CHAMPUS proposes the outcomes, topics, practice, indicators and career examples. An authorized teacher can select an exercise and define the assessment.",
+    "courses": [
+      {
+        "id": "web-and-apps-development",
+        "title": "Web and Apps Development",
+        "overview": "Build a small browser application around one action. HTML gives each control a purpose. CSS arranges the controls. JavaScript responds when the user acts.",
+        "outcome": "Build a page that lets a user make a selection and see the result.",
+        "practice": "Sketch one screen. Add a labelled control and a result area. Use the page with a keyboard at phone and desktop widths. Save the result of each check.",
+        "indicator": "A reviewer can reach the control using the keyboard, change the selection and see the corresponding result at both widths.",
+        "artifact": "A runnable page and a short record of the four checks.",
+        "topics": ["Semantic HTML controls", "Responsive CSS layouts", "JavaScript events and page updates"],
+        "resource": {
+          "title": "Your first website",
+          "url": "https://developer.mozilla.org/en-US/docs/Learn_web_development/Getting_started/Your_first_website",
+          "provider": "MDN Web Docs"
+        },
+        "paths": {
+          "developer": "Build an issue queue. Let the user select an issue status and display matching tickets.",
+          "photographer": "Build a proof gallery. Let the client select a photo category and display the matching images."
+        }
+      },
+      {
+        "id": "database",
+        "title": "Database",
+        "overview": "A relational database stores related records in tables. A primary key identifies a record. A foreign key links that record to a related table.",
+        "outcome": "Model a one-to-many relationship and retrieve related records with a join.",
+        "practice": "Create two tables with primary keys. Add a foreign key to the child table. Insert sample records, run a join and try inserting a child with an unknown parent.",
+        "indicator": "The join returns the correct parent for each child. The database rejects a child whose parent is missing.",
+        "artifact": "A schema, sample inserts, a join query and the results of both checks.",
+        "topics": ["Primary and foreign keys", "One-to-many relationships", "Join queries"],
+        "resource": {
+          "title": "PostgreSQL tutorial",
+          "url": "https://www.postgresql.org/docs/current/tutorial.html",
+          "provider": "PostgreSQL Global Development Group"
+        },
+        "paths": {
+          "developer": "Link releases to change requests and list the requests included in each release.",
+          "photographer": "Link shoots to image files and list the files delivered for each shoot."
+        }
+      },
+      {
+        "id": "human-behaviour",
+        "title": "Human Behaviour",
+        "overview": "The setting can affect how a person acts. An observer can describe a pause, a question or a choice. The reason for that action requires further evidence.",
+        "outcome": "Separate an observed action from a possible explanation for it.",
+        "practice": "With permission, observe a volunteer doing a short task. Write down one action, two possible reasons and a neutral follow-up question. Remove identifying details.",
+        "indicator": "The note describes a visible action, considers a feature of the situation and keeps the volunteer's answer distinct from the observer's interpretation.",
+        "artifact": "An anonymous observation note with the follow-up question and response.",
+        "topics": ["Observable behaviour", "Situational influences", "Attribution and interpretation"],
+        "resource": {
+          "title": "What Is Social Psychology?",
+          "url": "https://openstax.org/books/psychology-2e/pages/12-1-what-is-social-psychology",
+          "provider": "OpenStax"
+        },
+        "paths": {
+          "developer": "Observe a volunteer finding a setting in an app. Ask what they expected the menu label to mean.",
+          "photographer": "Observe a volunteer choosing a portrait from a contact sheet. Ask what details guided their choice."
+        }
+      },
+      {
+        "id": "seo-and-geo",
+        "title": "SEO and GEO",
+        "overview": "Search engine optimization helps people and search systems understand a page. Generative engine optimization concerns how content may appear in generated answers. Google describes common foundations for both on its own search service.",
+        "outcome": "Revise a page so a reader can find a supported answer to a specific search question.",
+        "practice": "Choose one question and inspect an existing page. Revise its title, heading and answer. Cite the source for each factual claim. Keep a copy of both versions.",
+        "indicator": "The revised page identifies the question, gives a direct answer and links to a source that supports the answer. Appearance in search results remains uncertain.",
+        "artifact": "The original and revised page with a short explanation of each change.",
+        "topics": ["Search intent", "Page structure and discoverability", "Evidence in answers"],
+        "resource": {
+          "title": "Optimizing for generative AI features on Google Search",
+          "url": "https://developers.google.com/search/docs/fundamentals/ai-optimization-guide",
+          "provider": "Google Search Central"
+        },
+        "paths": {
+          "developer": "Revise a help page that answers a common setup question. Link to the versioned product documentation.",
+          "photographer": "Revise a portfolio FAQ about booking a session. Link to the published booking terms that support the answer."
+        }
+      },
+      {
+        "id": "digital-marketing",
+        "title": "Digital Marketing",
+        "overview": "A campaign connects a defined audience, a message and an action. A useful measure specifies the event being counted, the denominator and the reporting period.",
+        "outcome": "Use a conversion measure to decide one change to a campaign.",
+        "practice": "Define a target action. For one channel and one period, record total visits and visits with the target action. Divide the second count by the first. Explain one limit of the result.",
+        "indicator": "Both counts cover the same channel and period. Each converted visit is counted once. The report identifies the denominator and leaves the rate undefined when there are no visits.",
+        "artifact": "A campaign brief and a worksheet showing the counts, calculation and proposed change.",
+        "topics": ["Audience and campaign objectives", "Calls to action", "Conversion measurement"],
+        "resource": {
+          "title": "Metrics Used to Evaluate the Success of Online Marketing",
+          "url": "https://openstax.org/books/principles-marketing/pages/16-3-metrics-used-to-evaluate-the-success-of-online-marketing",
+          "provider": "OpenStax"
+        },
+        "paths": {
+          "developer": "Use visits to a product page and visits that lead to trial activation. Propose a change to the trial invitation.",
+          "photographer": "Use visits to a portfolio page and visits that lead to a booking enquiry. Propose a change to the enquiry invitation."
+        }
+      },
+      {
+        "id": "big-data",
+        "title": "Big Data",
+        "overview": "Distributed tools process data in partitions. A small practice dataset lets you check a transformation before applying it to a larger collection.",
+        "outcome": "Produce a repeatable grouped count and reconcile the result with the input.",
+        "practice": "Read two sample files with the same schema into a Spark DataFrame. Define a stable record ID. Remove duplicates by ID, count rows with missing categories and group the remaining records.",
+        "indicator": "Grouped totals plus the missing-category count equal the number of unique records. Running the same steps on the same input produces the same totals.",
+        "artifact": "A notebook, two small input files and a table that reconciles the counts.",
+        "topics": ["Partitioned data", "DataFrame transformations", "Grouped counts and data quality"],
+        "resource": {
+          "title": "DataFrame quickstart",
+          "url": "https://spark.apache.org/docs/latest/api/python/getting_started/quickstart_df.html",
+          "provider": "Apache Spark"
+        },
+        "paths": {
+          "developer": "Combine application event files. Use the event ID to remove duplicates and count events by event type.",
+          "photographer": "Combine image inventory exports. Use the asset ID to remove duplicates and count assets by usage licence."
+        }
+      },
+      {
+        "id": "business-model",
+        "title": "Business Model",
+        "overview": "A business model describes how a business serves a customer and covers its costs. The Business Model Canvas links customers, value, channels, resources and financial assumptions.",
+        "outcome": "Connect a customer need, a value proposition, a revenue source and a delivery cost in one model.",
+        "practice": "Draft a one-page canvas. Select one customer segment and follow its path from need to purchase and delivery. Flag one assumption and describe how you would test it.",
+        "indicator": "The model identifies who pays, what they receive and one cost of supplying it. A proposed test addresses a named assumption.",
+        "artifact": "An annotated canvas and one assumption test.",
+        "topics": ["Customer segments", "Value propositions and channels", "Revenue streams and cost structure"],
+        "resource": {
+          "title": "The Business Model Canvas",
+          "url": "https://www.strategyzer.com/library/the-business-model-canvas",
+          "provider": "Strategyzer"
+        },
+        "paths": {
+          "developer": "Model a scheduling service for small clinics. Connect the subscription price to the cost of hosting and support.",
+          "photographer": "Model a product photography service for food sellers. Connect the session fee to the cost of shooting and editing."
+        }
+      },
+      {
+        "id": "entrepreneurship",
+        "title": "Entrepreneurship",
+        "overview": "An opportunity begins with a problem that matters to a potential customer. Early research can reveal how people handle the problem today and whether an idea deserves another test.",
+        "outcome": "Use evidence from a customer conversation to decide which business assumption to test next.",
+        "practice": "Write one assumption about a customer's problem. With consent, ask a potential customer to describe a recent instance. Record the current workaround and one observation that challenges your idea.",
+        "indicator": "The record separates what the person reported from the student's interpretation. The proposed next test addresses uncertainty that the conversation exposed.",
+        "artifact": "An anonymous interview note, an assumption and a plan for the next test.",
+        "topics": ["Opportunity discovery", "Customer research", "Testing assumptions"],
+        "resource": {
+          "title": "Researching Potential Business Opportunities",
+          "url": "https://openstax.org/books/entrepreneurship/pages/5-2-researching-potential-business-opportunities",
+          "provider": "OpenStax"
+        },
+        "paths": {
+          "developer": "Ask a small business owner about the last time two customers booked the same slot. Use the current workaround to design a scheduling test.",
+          "photographer": "Ask a restaurant owner about the last time they needed a new menu image. Use their actual process to design a service trial."
+        }
+      },
+      {
+        "id": "english-for-business",
+        "title": "English for Business",
+        "overview": "A professional email makes an arrangement the reader can confirm. A clear message identifies the purpose, date, time zone and requested response.",
+        "outcome": "Write a concise English email that enables a business contact to confirm an arrangement.",
+        "practice": "Draft a subject line and a short message. Propose a date and time with a time zone. State what each participant needs to prepare. Ask the recipient to confirm or suggest an alternative.",
+        "indicator": "A reader can identify the purpose, proposed time, preparation and next action without asking for missing details.",
+        "artifact": "A draft email and a short peer check of the four details.",
+        "topics": ["Purpose and tone", "Dates and time zones", "Requests and confirmation"],
+        "resource": {
+          "title": "Making arrangements",
+          "url": "https://learnenglish.britishcouncil.org/free-resources/business/english-emails/unit-5-making-arrangements",
+          "provider": "British Council LearnEnglish"
+        },
+        "paths": {
+          "developer": "Email a client to arrange a product walkthrough. Name the version and ask them to bring one task they want to test.",
+          "photographer": "Email a client to arrange a pre-shoot meeting. Name the location and ask them to bring a brief and a shot list."
+        }
+      }
+    ]
+  },
+  {
+    "id": "culinary",
+    "title": "Culinary Arts",
+    "curriculumBasis": "A verified syllabus for this program is pending.",
+    "practiceBasis": "Course practice can be mapped after the source outcomes are available.",
+    "courses": []
+  },
+  {
+    "id": "hospitality",
+    "title": "Hotel Management",
+    "curriculumBasis": "A verified syllabus for this program is pending.",
+    "practiceBasis": "Course practice can be mapped after the source outcomes are available.",
+    "courses": []
+  },
+  {
+    "id": "events",
+    "title": "Event Management",
+    "curriculumBasis": "A verified syllabus for this program is pending.",
+    "practiceBasis": "Course practice can be mapped after the source outcomes are available.",
+    "courses": []
+  }
+]

@@ -11,6 +11,7 @@ import {
   Radar,
 } from "lucide-react";
 import { check, requireDb } from "../data/client";
+import { programName } from "../data/platform";
 import { useBusy, useStore } from "../data/store";
 import { Notice } from "../components/Layout";
 type Role = "student" | "teacher" | "industry";
@@ -138,7 +139,8 @@ export function Preference() {
           ))}
         </select>
         <small>
-          Optional. Enter a type you already identify with. Only you can see it.
+          Optional. Enter a type you already identify with. You can choose to
+          share it with the AI advisor for one request.
         </small>
       </label>
       {style && <p>{approaches[style as keyof typeof approaches]}</p>}
@@ -162,7 +164,7 @@ export function Curriculum({
   overview?: boolean;
 }) {
   const s = useStore();
-  if (role !== "student" && !s.roles.includes(role))
+  if ((role === "teacher" ? "campus" : role) !== s.workspace)
     return <Navigate replace to="/overview" />;
   return <Board key={role + s.user!.id} role={role} overview={overview} />;
 }
@@ -304,11 +306,11 @@ function Board({ role, overview }: { role: Role; overview: boolean }) {
     <>
       <div className="overline">
         <Icon size={17} />
-        {role} workspace
+        {teacher ? "Campus" : role} workspace
       </div>
       <h1 className="page-title">
         {teacher
-          ? "Teaching studio"
+          ? "Campus dashboard"
           : industry
             ? "Industry desk"
             : overview
@@ -322,6 +324,43 @@ function Board({ role, overview }: { role: Role; overview: boolean }) {
             ? "Describe the capabilities your teams need in practice."
             : "Follow your course outcomes, practise one skill and submit evidence."}
       </p>
+      {overview && role === "student" && (
+        <p className="placement-line">
+          <GraduationCap size={16} />
+          {programName(s.profile.program)} · Cohort{" "}
+          {s.cohort || "awaiting placement"}
+        </p>
+      )}
+      <nav className="action-strip" aria-label="Workspace actions">
+        {role !== "industry" && (
+          <Link to="/programs">
+            <BookOpen />
+            Course guide
+          </Link>
+        )}
+        {teacher && (
+          <Link to="/progress">
+            <GraduationCap />
+            Class progress
+          </Link>
+        )}
+        {role !== "student" && (
+          <Link to="/partnerships">
+            <Building2 />
+            Partnerships
+          </Link>
+        )}
+        {role !== "industry" && (
+          <Link to="/guidance">
+            <ClipboardList />
+            Learning guidance
+          </Link>
+        )}
+        <Link to="/advisor">
+          <Layers />
+          AI advisor
+        </Link>
+      </nav>
       {role === "student" && <LearningMilestones />}
       {loading ? (
         <Notice>Loading workspace…</Notice>
@@ -463,6 +502,14 @@ function Board({ role, overview }: { role: Role; overview: boolean }) {
                 <Link to="/profile">My working style</Link>
                 <hr />
                 <Link to="/skills">Browse skill indicators</Link>
+              </section>
+            ) : teacher && !s.roles.includes("teacher") ? (
+              <section className="panel">
+                <h2>Campus review</h2>
+                <p>
+                  Open the review and curation tools assigned to your account.
+                </p>
+                <Link to="/staff">Open review and curation</Link>
               </section>
             ) : (
               <form
