@@ -91,24 +91,51 @@ export function Preference() {
         }, "Preference saved.");
       }}
     >
-      <h2>Working style</h2>
+      <h2>Learning preferences</h2>
       <p>
-        Which approach would you like to try on your next task? This optional
-        reflection is private and can change.
+        Picture your next assignment. Which scene shows how you want to begin?
       </p>
-      <label>
-        Preferred approach
-        <select
-          value={style}
-          disabled={!ready}
-          onChange={(e) => set(e.target.value)}
-        >
-          <option value="">No preference</option>
-          {Object.keys(approaches).map((k) => (
-            <option key={k}>{k}</option>
-          ))}
-        </select>
-      </label>
+      <div className="scene-grid">
+        {Object.entries({
+          Explore: "food-photography",
+          Plan: "study-plan",
+          Collaborate: "venture-workshop",
+          Reflect: "culinary-practice",
+        }).map(([name, image]) => (
+          <button
+            type="button"
+            key={name}
+            disabled={!ready}
+            aria-pressed={style === name}
+            onClick={() => set(style === name ? "" : name)}
+          >
+            <img src={"/images/" + image + ".webp"} alt="" />
+            <strong>{name}</strong>
+            <small>{approaches[name as keyof typeof approaches]}</small>
+          </button>
+        ))}
+      </div>
+      <details>
+        <summary>About personality preferences</summary>
+        <p>
+          MBTI describes four pairs of preferences: outward or inward attention,
+          details or possibilities, logic or values, and structure or
+          flexibility. You can use either approach. Reflect on what fits this
+          task and revisit your choice after practice.
+        </p>
+        <p>
+          The picture you choose records a practice preference. It has no effect
+          on grades or access.
+        </p>
+        <a href="https://www.myersbriggs.org/my-mbti-personality-type/the-mbti-preferences/">
+          Read about the four preference pairs
+        </a>
+        <p>
+          Foto Karakter inspired the focus on self-reflection. The four CHAMPUS
+          scenes let you choose a first step for this assignment.
+        </p>
+        <a href="https://fotokarakter.com/">About Foto Karakter</a>
+      </details>
       <label>
         Self-reported personality type
         <select

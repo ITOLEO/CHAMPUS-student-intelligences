@@ -191,7 +191,7 @@ export function Detail({ workspace = false }: { workspace?: boolean }) {
                   : o.summary}
             </p>
             {!reasons.length && s.user && (
-              <Link to="/profile">Edit interests</Link>
+              <Link to="/profile">View profile</Link>
             )}
           </section>
           <section className="panel">

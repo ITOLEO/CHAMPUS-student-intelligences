@@ -18,6 +18,7 @@ export default endpoint(async (req) => {
   const { id, db, profile } = await caller(req, Object.keys(roles));
   const {
     question,
+    thread = null,
     includeContext = false,
     shareType = false,
   } = req.body || {};
@@ -27,6 +28,12 @@ export default endpoint(async (req) => {
     question.length > 2500
   )
     throw problem(400, "Enter a question of up to 2,500 characters.");
+  if (
+    thread !== null &&
+    (typeof thread !== "string" ||
+      !/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(thread))
+  )
+    throw problem(400, "Invalid conversation.");
   const key = process.env.GEMINI_API_KEY,
     model = process.env.GEMINI_MODEL;
   if (!key || !model || !/^[a-zA-Z0-9._-]+$/.test(model))
@@ -47,6 +54,9 @@ export default endpoint(async (req) => {
     .eq("status", "complete")
     .order("created_at", { ascending: false })
     .limit(4);
+  recentTurns = thread
+    ? recentTurns.eq("thread_id", thread)
+    : recentTurns.is("thread_id", null);
   if (!includeRecords) recentTurns = recentTurns.eq("record_context", false);
   if (!includeType) recentTurns = recentTurns.eq("type_context", false);
   const history = checked(await recentTurns).reverse();
@@ -120,9 +130,13 @@ export default endpoint(async (req) => {
     if (profile.workspace === "industry") query = query.eq("author_id", id);
     context.workplaceNeeds = checked(await query);
   }
-  const turn = await db.rpc("start_advisor_turn", {
-    question_text: question.trim(),
-  });
+  const turn = await db.rpc(
+    thread ? "start_advisor_thread_turn" : "start_advisor_turn",
+    {
+      ...(thread ? { thread } : {}),
+      question_text: question.trim(),
+    },
+  );
   if (turn.error)
     throw problem(
       turn.error.message.includes("ten minutes") ? 429 : 503,

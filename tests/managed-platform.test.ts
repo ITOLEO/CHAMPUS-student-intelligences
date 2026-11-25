@@ -195,8 +195,14 @@ test("managed accounts, curriculum, partner briefs, recommendations and access b
     ];
     for (const [i, role] of ["student", "campus", "industry"].entries()) {
       await db.transaction(async (tx) => {
-        await tx.query("insert into auth.users(id,email) values($1,$2)", [ids[i], role + "-demo+" + runId + "@preview.champus.invalid"]);
-        await tx.query("update auth.users set raw_app_meta_data=$2 where id=$1", [ids[i], JSON.stringify({ champus_demo: { run: runId, role } })]);
+        await tx.query("insert into auth.users(id,email) values($1,$2)", [
+          ids[i],
+          role + "-demo+" + runId + "@preview.champus.invalid",
+        ]);
+        await tx.query(
+          "update auth.users set raw_app_meta_data=$2 where id=$1",
+          [ids[i], JSON.stringify({ champus_demo: { run: runId, role } })],
+        );
       });
     }
     await db.exec("set role service_role");
@@ -254,7 +260,48 @@ test("managed accounts, curriculum, partner briefs, recommendations and access b
       (await query("select * from demo_directory()")).rows.length,
       3,
     );
+    await actor(ids[0]);
+    assert.equal(
+      (
+        await query(
+          "update profiles set name='Changed' where user_id=$1 returning user_id",
+          [ids[0]],
+        )
+      ).rows.length,
+      0,
+    );
+    await query("select start_advisor_thread_turn('Explain a join',$1)", [
+      runId,
+    ]);
+    assert.equal(
+      (
+        await query("select question from advisor_turns where thread_id=$1", [
+          runId,
+        ])
+      ).rows[0].question,
+      "Explain a join",
+    );
+    await assert.rejects(
+      query(
+        "insert into storage.objects(bucket_id,name) values('profile-photos',$1)",
+        [ids[0] + "/avatar.jpg"],
+      ),
+      /row-level security/,
+    );
+    await actor(ids[1]);
+    await query(
+      "insert into storage.objects(bucket_id,name) values('profile-photos',$1)",
+      [ids[1] + "/avatar.jpg"],
+    );
+    await assert.rejects(
+      query(
+        "insert into storage.objects(bucket_id,name) values('profile-photos',$1)",
+        [ids[0] + "/other.jpg"],
+      ),
+      /row-level security/,
+    );
     await db.exec("reset role;set role anon");
+    await query("select set_config('request.jwt.claim.sub','',false)");
     assert.equal(
       (
         await query("select * from program_lessons where institution_id=$1", [

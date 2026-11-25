@@ -1,3 +1,4 @@
+import { ExitDemo } from "../components/ExitDemo";
 import { workspaceNames } from "../data/platform";
 import { ThemeChoices } from "./Appearance";
 import { useAppearance } from "../data/appearance";
@@ -65,7 +66,7 @@ export function Brand({
 }
 
 export function Avatar() {
-  const { user, profile } = useStore();
+  const { user, profile, workspace } = useStore();
   const name = profile.name.trim() || user?.email || "";
   const initials = name
     .split(/\s+|@/)
@@ -73,8 +74,33 @@ export function Avatar() {
     .map((word) => word[0])
     .join("")
     .toUpperCase();
-  const value = user?.user_metadata.avatar_url;
-  const photo = typeof value === "string" ? safeWebUrl(value) : undefined;
+  const value =
+    workspace === "student"
+      ? user?.app_metadata.avatar_url
+      : user?.user_metadata.avatar_url;
+  const path = workspace !== "student" && user?.user_metadata.avatar_path;
+  const [uploaded, setUploaded] = useState("");
+  useEffect(() => {
+    let active = true;
+    let objectUrl = "";
+    setUploaded("");
+    if (typeof path === "string" && path.startsWith(user?.id + "/"))
+      requireDb()
+        .storage.from("profile-photos")
+        .download(path)
+        .then(({ data }) => {
+          if (active && data) {
+            objectUrl = URL.createObjectURL(data);
+            setUploaded(objectUrl);
+          }
+        });
+    return () => {
+      active = false;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [path, user?.id]);
+  const photo =
+    uploaded || (typeof value === "string" ? safeWebUrl(value) : undefined);
   const [failed, setFailed] = useState("");
   return (
     <span className="avatar" aria-hidden="true">
@@ -434,21 +460,21 @@ export function Header() {
                     <Avatar />
                     <div>
                       <strong>{profile.name || role + " account"}</strong>
-                      <small>{user.email}</small>
+                      <small>
+                        {previewMode ? "You’re in a demo account" : user.email}
+                      </small>
                     </div>
                   </div>
                   <div className="account-section">
-                    <Link to="/overview" onClick={() => setPopup(null)}>
-                      <LayoutDashboard size={17} /> Dashboard
-                    </Link>
                     <Link to="/profile" onClick={() => setPopup(null)}>
                       <UserRound size={17} /> My profile
                     </Link>
-                    <Link to="/demo">
-                      <LayoutDashboard size={17} />
-                      Try demo
-                    </Link>
-                    {previewMode && <a href="/">Exit demo</a>}
+                    {!previewMode && (
+                      <Link to="/demo">
+                        <LayoutDashboard size={17} />
+                        Try demo
+                      </Link>
+                    )}
                     <Link to="/settings" onClick={() => setPopup(null)}>
                       <Settings size={17} /> Settings
                     </Link>
@@ -462,22 +488,26 @@ export function Header() {
                     {Intl.DateTimeFormat().resolvedOptions().timeZone}
                   </div>
                   <div className="account-section">
-                    <button
-                      type="button"
-                      className="account-signout"
-                      disabled={job.busy}
-                      onClick={() =>
-                        job.run(async () => {
-                          const { error } = await requireDb().auth.signOut({
-                            scope: "local",
-                          });
-                          if (error) throw error;
-                          navigate("/sign-in", { replace: true });
-                        })
-                      }
-                    >
-                      <LogOut size={17} /> Sign out
-                    </button>
+                    {previewMode ? (
+                      <ExitDemo />
+                    ) : (
+                      <button
+                        type="button"
+                        className="account-signout"
+                        disabled={job.busy}
+                        onClick={() =>
+                          job.run(async () => {
+                            const { error } = await requireDb().auth.signOut({
+                              scope: "local",
+                            });
+                            if (error) throw error;
+                            navigate("/sign-in", { replace: true });
+                          })
+                        }
+                      >
+                        <LogOut size={17} /> Sign out
+                      </button>
+                    )}
                     {job.message && <small role="alert">{job.message}</small>}
                   </div>
                 </div>

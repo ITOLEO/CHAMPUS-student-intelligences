@@ -32,7 +32,7 @@ import { Detail } from "./views/Detail";
 import { Learning, EvidenceList } from "./views/Skills";
 import { Overview, Profile } from "./views/Workspace";
 import { Staff } from "./views/Staff";
-import { Curriculum } from "./views/Curriculum";
+import { Curriculum, Preference } from "./views/Curriculum";
 import { Settings, WorkspaceSearch } from "./views/Preferences";
 import { useAppearance } from "./data/appearance";
 
@@ -173,6 +173,7 @@ function Pages() {
       "/learning": "Learning library",
       "/sign-in": "Sign in",
       "/overview": "Dashboard",
+      "/learning-preferences": "Learning preferences",
       "/profile": "My profile",
       "/skills": "Skill development",
       "/staff": "Review and curation",
@@ -340,6 +341,14 @@ function Pages() {
             element={
               <RolePage allowed={["student"]}>
                 <Learning workspace />
+              </RolePage>
+            }
+          />
+          <Route
+            path="/learning-preferences"
+            element={
+              <RolePage allowed={["student"]}>
+                <Preference />
               </RolePage>
             }
           />

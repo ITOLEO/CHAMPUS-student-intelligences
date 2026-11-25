@@ -1,7 +1,8 @@
+import { ExitDemo } from "../components/ExitDemo";
 import { homeFor, programName } from "../data/platform";
 import { Avatar } from "../components/Navigation";
-import { safeWebUrl } from "../data/model";
-import { Curriculum, Preference } from "./Curriculum";
+import { previewMode } from "../data/client";
+import { Curriculum } from "./Curriculum";
 import { useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { FileCheck2 } from "lucide-react";
@@ -31,21 +32,35 @@ export function Overview() {
 function ProfilePhoto() {
   const { user } = useStore();
   const job = useBusy();
-  const current = user?.user_metadata.avatar_url;
-  const [url, setUrl] = useState(typeof current === "string" ? current : "");
+  const [file, setFile] = useState<File | null>(null);
   return (
     <form
       className="panel form"
       onSubmit={(e) => {
         e.preventDefault();
         job.run(async () => {
-          const avatarUrl = safeWebUrl(url.trim());
-          if (url.trim() && !avatarUrl)
-            throw new Error("Enter an HTTPS link to your photo.");
-          const { error } = await requireDb().auth.updateUser({
-            data: { avatar_url: avatarUrl || null },
+          if (!file || !user) throw new Error("Choose a photo first.");
+          const ext = {
+            "image/jpeg": "jpg",
+            "image/png": "png",
+            "image/webp": "webp",
+          }[file.type];
+          if (!ext || file.size > 2 * 1024 * 1024)
+            throw new Error("Choose a JPEG, PNG or WebP under 2 MB.");
+          const path = user.id + "/" + crypto.randomUUID() + "." + ext;
+          const db = requireDb(),
+            bucket = db.storage.from("profile-photos");
+          check(await bucket.upload(path, file));
+          const { error } = await db.auth.updateUser({
+            data: { avatar_path: path },
           });
-          if (error) throw error;
+          if (error) {
+            await bucket.remove([path]);
+            throw error;
+          }
+          const old = user.user_metadata.avatar_path;
+          if (typeof old === "string" && old.startsWith(user.id + "/"))
+            await bucket.remove([old]);
         }, "Profile photo saved.");
       }}
     >
@@ -53,19 +68,15 @@ function ProfilePhoto() {
         <Avatar /> Profile photo
       </h2>
       <label>
-        Photo URL
+        Upload photo
         <input
-          type="url"
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          placeholder="https://…"
-          maxLength={1000}
+          required
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          onChange={(e) => setFile(e.target.files?.[0] || null)}
         />
       </label>
-      <small>
-        Use a direct HTTPS image link. Leave the field empty to use your
-        initials.
-      </small>
+      <small>JPEG, PNG or WebP · up to 2 MB</small>
       <button className="btn secondary" disabled={job.busy}>
         Save photo
       </button>
@@ -80,79 +91,92 @@ export function Profile() {
   const student = s.workspace === "student";
   return (
     <>
-      <p className="overline">Account</p>
-      <h1 className="page-title">My profile</h1>
-      <p className="lede">Manage the details shown in your CHAMPUS account.</p>
-      <Link className="btn secondary" to="/demo">
-        Try demo
-      </Link>
-      <ProfilePhoto />
-      {student && <Preference />}
-      <form
-        className="form panel"
-        onSubmit={(e) => {
-          e.preventDefault();
-          job.run(async () => {
-            check(
-              await requireDb()
-                .from("profiles")
-                .update({
-                  name: p.name,
-                  interests: p.interests,
-                  goals: p.goals,
-                })
-                .eq("user_id", s.user!.id)
-                .select("user_id")
-                .single(),
-            );
-            s.refresh();
-          }, "Profile saved.");
-        }}
-      >
-        <h2>Profile details</h2>
+      <div className="profile-identity panel">
+        <Avatar />
+        <h1>{p.name || "My profile"}</h1>
         <p>
-          <strong>Institution</strong> ·{" "}
           {s.institutions.find((i) => i.id === s.institution)?.name ||
-            s.institution}
+            s.institution}{" "}
+          · Active
         </p>
-        <label>
-          Name
-          <input
-            value={p.name}
-            maxLength={100}
-            onChange={(e) => P({ ...p, name: e.target.value })}
-          />
-        </label>
-        {student && (
-          <>
+        {previewMode ? (
+          <small>You’re in a demo account</small>
+        ) : (
+          <Link to="/demo">Try demo</Link>
+        )}
+      </div>
+      {student ? (
+        <>
+          <p className="profile-notice">
+            Your campus maintains your official profile.{" "}
+            <Link to="/help">Request a correction</Link>
+          </p>
+          <details className="panel">
+            <summary>Academic information</summary>
             <p>
-              <strong>Program</strong> · {programName(p.program)} · Cohort{" "}
-              {s.cohort || "awaiting assignment"}
+              {programName(p.program) || "Program pending"} · Cohort{" "}
+              {s.cohort || "pending"}
+            </p>
+          </details>
+          <details className="panel">
+            <summary>Personal information</summary>
+            <p>{p.name}</p>
+            <p>Interests · {p.interests || "Not recorded"}</p>
+            <p>Learning goal · {p.goals || "Not recorded"}</p>
+          </details>
+          <details className="panel">
+            <summary>Contact information</summary>
+            <p>{s.user?.email}</p>
+          </details>
+          <section className="panel">
+            <h2>Learning preferences</h2>
+            <p>Choose how you would like to approach your next assignment.</p>
+            <Link to="/learning-preferences">Open private reflection</Link>
+          </section>
+        </>
+      ) : (
+        <>
+          <ProfilePhoto />
+          <form
+            className="form panel"
+            onSubmit={(e) => {
+              e.preventDefault();
+              job.run(async () => {
+                check(
+                  await requireDb()
+                    .from("profiles")
+                    .update({
+                      name: p.name,
+                    })
+                    .eq("user_id", s.user!.id)
+                    .select("user_id")
+                    .single(),
+                );
+                s.refresh();
+              }, "Profile saved.");
+            }}
+          >
+            <h2>Profile details</h2>
+            <p>
+              <strong>Institution</strong> ·{" "}
+              {s.institutions.find((i) => i.id === s.institution)?.name ||
+                s.institution}
             </p>
             <label>
-              Interests
+              Name
               <input
-                value={p.interests}
-                maxLength={500}
-                placeholder="e.g. culinary arts, photography"
-                onChange={(e) => P({ ...p, interests: e.target.value })}
+                value={p.name}
+                maxLength={100}
+                onChange={(e) => P({ ...p, name: e.target.value })}
               />
             </label>
-            <label>
-              Development goals
-              <textarea
-                maxLength={1000}
-                value={p.goals}
-                onChange={(e) => P({ ...p, goals: e.target.value })}
-              />
-            </label>
-          </>
-        )}
-        <button className="btn primary" disabled={job.busy}>
-          Save profile
-        </button>
-        {job.message && <Notice>{job.message}</Notice>}
-      </form>
+            <button className="btn primary" disabled={job.busy}>
+              Save profile
+            </button>
+            {job.message && <Notice>{job.message}</Notice>}
+          </form>
+        </>
+      )}
       {student && (
         <>
           <section className="panel">
@@ -184,6 +208,16 @@ export function Profile() {
             )}
           </section>
         </>
+      )}
+      <section className="panel">
+        <h2>Help Center</h2>
+        <p>Contact your campus about account details or access.</p>
+        <Link to="/help">Open Help Center</Link>
+      </section>
+      {previewMode && (
+        <section className="panel">
+          <ExitDemo />
+        </section>
       )}
     </>
   );

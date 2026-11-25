@@ -13,10 +13,10 @@ export function LearningMilestones() {
   );
   const milestones = [
     {
-      title: "Set a learning goal",
-      count: s.profile.goals.trim() ? 1 : 0,
+      title: "Record a skill reflection",
+      count: s.reflections.length,
       icon: Target,
-      to: "/profile",
+      to: "/skills",
     },
     {
       title: "Complete a practice resource",
@@ -46,10 +46,20 @@ export function LearningMilestones() {
           <div className="overline">
             <Trophy size={15} /> Learning journey
           </div>
-          <h2 id="milestones-title">Your milestones</h2>
+          <h2 id="milestones-title">
+            {
+              [
+                "First steps",
+                "Explorer",
+                "Practitioner",
+                "Portfolio builder",
+                "Skill champion",
+              ][stepsDone]
+            }
+          </h2>
         </div>
         <p>
-          {stepsDone} of {milestones.length} reached
+          Level {stepsDone + 1} · {stepsDone * 25} XP
         </p>
       </div>
       <progress
@@ -57,6 +67,7 @@ export function LearningMilestones() {
         max={milestones.length}
         value={stepsDone}
       />
+      <p>Earn 25 XP the first time you reach each milestone.</p>
       <ol className="milestone-grid">
         {milestones.map(({ title, count, icon: Icon, to }) => (
           <li key={title} className={count ? "reached" : ""}>

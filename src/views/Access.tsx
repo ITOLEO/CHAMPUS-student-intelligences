@@ -1,3 +1,4 @@
+import { ExitDemo } from "../components/ExitDemo";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { BookOpen, BriefcaseBusiness, GraduationCap } from "lucide-react";
 import { useEffect } from "react";
@@ -142,7 +143,7 @@ export function Demo() {
         <Notice>Opening your sample accounts and coursework…</Notice>
       )}
       {job.message && <Notice>{job.message}</Notice>}
-      <a href="/">Exit demo</a>
+      {previewMode && <ExitDemo />}
     </main>
   );
 }

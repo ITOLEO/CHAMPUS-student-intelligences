@@ -181,6 +181,7 @@ export function Partnerships() {
 export function Advisor() {
   const s = useStore(),
     job = useBusy(),
+    [thread, setThread] = useState<string | null>(null),
     [question, setQuestion] = useState(""),
     [withContext, consent] = useState(false),
     [shareType, setShareType] = useState(false);
@@ -189,13 +190,25 @@ export function Advisor() {
       readRows(
         await requireDb()
           .from("advisor_turns")
-          .select("id,question,answer,status,created_at,progress_snapshot")
+          .select(
+            "id,thread_id,question,answer,status,created_at,progress_snapshot",
+          )
           .eq("user_id", s.user!.id)
           .order("created_at", { ascending: false })
           .limit(40),
       ).reverse(),
     [s.user?.id],
   );
+  const recent = chat.data || [];
+  const conversations = new Map<string, string>();
+  for (const turn of recent) {
+    const key = turn.thread_id || "legacy";
+    if (!conversations.has(key)) conversations.set(key, turn.question);
+  }
+  const selected =
+    thread ??
+    (recent.length ? recent[recent.length - 1].thread_id || "legacy" : null);
+  const turns = recent.filter((t) => (t.thread_id || "legacy") === selected);
   const prompts =
     s.workspace === "student"
       ? [
@@ -215,8 +228,11 @@ export function Advisor() {
     e.preventDefault();
     await job.run(async () => {
       try {
+        const id = selected || crypto.randomUUID();
+        setThread(id);
         await postAction("advisor", {
           question,
+          thread: id === "legacy" ? null : id,
           includeContext: withContext,
           shareType: withContext && shareType,
         });
@@ -229,21 +245,64 @@ export function Advisor() {
     });
   }
   return (
-    <>
-      <p className="overline">{s.workspace} workspace</p>
-      <h1 className="page-title">AI advisor</h1>
-      <p className="lede">
-        {s.workspace === "student"
-          ? "Discuss a course, your goal and a next action. You choose what to send to your lecturer."
-          : s.workspace === "campus"
-            ? "Develop a practice brief or ask for feedback on a teaching approach."
-            : "Translate a workplace problem into a clear skill request for the campus."}
-      </p>
+    <section className="chat-room">
+      <nav className="chat-tools" aria-label="Conversations">
+        <button
+          type="button"
+          className="btn secondary"
+          disabled={job.busy}
+          onClick={() => {
+            setThread(crypto.randomUUID());
+            setQuestion("");
+            consent(false);
+            setShareType(false);
+          }}
+        >
+          ＋ New chat
+        </button>
+        {conversations.size > 0 && (
+          <select
+            aria-label="Recent conversations"
+            disabled={job.busy}
+            value={selected || ""}
+            onChange={(e) => {
+              setThread(e.target.value);
+              setQuestion("");
+              consent(false);
+              setShareType(false);
+            }}
+          >
+            {!conversations.has(selected || "") && (
+              <option value={selected || ""}>New conversation</option>
+            )}
+            {[...conversations].reverse().map(([key, title]) => (
+              <option key={key} value={key}>
+                {title.slice(0, 60)}
+              </option>
+            ))}
+          </select>
+        )}
+      </nav>
+      <header className="chat-intro">
+        <p className="overline">CHAMPUS AI · {s.workspace}</p>
+        <h1 className="page-title">
+          {turns.length
+            ? "Your conversation"
+            : "What would you like to work on?"}
+        </h1>
+        <p className="lede">
+          {s.workspace === "student"
+            ? "Discuss a course, your goal and a next action. You choose what to send to your lecturer."
+            : s.workspace === "campus"
+              ? "Develop a practice brief or ask for feedback on a teaching approach."
+              : "Translate a workplace problem into a clear skill request for the campus."}
+        </p>
+      </header>
       <div className="advisor-history" aria-label="Private conversation">
         {!chat.data ? (
           <Loading error={chat.error} retry={chat.reload} />
         ) : (
-          chat.data.map((t) => (
+          turns.map((t) => (
             <article key={t.id} className="panel">
               <strong>You</strong>
               <p className="chat-message">{t.question}</p>
@@ -271,64 +330,69 @@ export function Advisor() {
           ))
         )}
       </div>
-      <form className="panel form" onSubmit={send}>
-        <h2>Ask a question</h2>
-        <div className="pills">
-          {prompts.map((p) => (
-            <button
-              type="button"
-              key={p}
-              className="pill"
-              onClick={() => setQuestion(p)}
-            >
-              {p}
-            </button>
-          ))}
-        </div>
+      <form className="panel form chat-composer" onSubmit={send}>
+        {!turns.length && (
+          <div className="pills">
+            {prompts.map((p) => (
+              <button
+                type="button"
+                key={p}
+                className="pill"
+                onClick={() => setQuestion(p)}
+              >
+                {p}
+              </button>
+            ))}
+          </div>
+        )}
         <label>
-          Message
+          <span className="sr-only">Message</span>
           <textarea
+            placeholder="Message CHAMPUS advisor…"
             required
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
             maxLength={2500}
           />
         </label>
-        <label className="check-line">
-          <input
-            type="checkbox"
-            checked={withContext}
-            onChange={(e) => {
-              consent(e.target.checked);
-              if (!e.target.checked) setShareType(false);
-            }}
-          />
-          {s.workspace === "student"
-            ? "Include my goal, working preference, assigned tasks and recorded progress in this request."
-            : "Include the workplace needs visible to my account."}
-        </label>
-        {s.workspace === "student" && withContext && (
+        <details>
+          <summary>Sharing preferences</summary>
           <label className="check-line">
             <input
               type="checkbox"
-              checked={shareType}
-              onChange={(e) => setShareType(e.target.checked)}
+              checked={withContext}
+              onChange={(e) => {
+                consent(e.target.checked);
+                if (!e.target.checked) setShareType(false);
+              }}
             />
-            Also share my optional self-reported personality type as a
-            reflection prompt.
+            {s.workspace === "student"
+              ? "Include my goal, working preference, assigned tasks and recorded progress in this request."
+              : "Include the workplace needs visible to my account."}
           </label>
-        )}
-        <small>
-          Gemini receives your question, course topics and recent replies that
-          match your sharing choices. Keep names and private records out of your
-          message. Your chat stays private inside CHAMPUS.
-        </small>
+          {s.workspace === "student" && withContext && (
+            <label className="check-line">
+              <input
+                type="checkbox"
+                checked={shareType}
+                onChange={(e) => setShareType(e.target.checked)}
+              />
+              Also share my optional self-reported personality type as a
+              reflection prompt.
+            </label>
+          )}
+          <small>
+            Gemini receives your question, course topics and recent replies that
+            match your sharing choices. Keep names and private records out of
+            your message. Your chat stays private inside CHAMPUS.
+          </small>
+        </details>
         <button className="btn primary" disabled={job.busy || !question.trim()}>
-          {job.busy ? "Preparing answer…" : "Send question"}
+          {job.busy ? "Preparing answer…" : "Send ↑"}
         </button>
         {job.message && <Notice>{job.message}</Notice>}
       </form>
-    </>
+    </section>
   );
 }
 

@@ -108,9 +108,9 @@ export const featureGroups = [
         "Goals and working preferences",
         "/profile",
         Compass,
-        "Set a goal and choose how you want to approach practice.",
+        "Review your learning goal and choose how to approach practice.",
         [
-          "Enter your own development goal.",
+          "Read the development goal recorded by your campus.",
           "Optionally record a working preference or a self-reported type.",
           "Choose whether the AI may use your working preference when suggesting practice.",
         ],
