@@ -179,6 +179,94 @@ test("managed accounts, curriculum, partner briefs, recommendations and access b
     assert.equal((await query("select * from advisor_turns")).rows.length, 0);
     assert.equal((await query("select * from evidence")).rows.length, 0);
     await assert.rejects(query("select start_advisor_turn('Course question')"));
+    // Exercise the same Auth triggers and seed transaction used by the live preview endpoint.
+    const runId = "1d841a9d-50ca-4c7b-a6a0-f2a63b0124d4";
+    await actor(peer);
+    await assert.rejects(
+      query("select reserve_demo($1,repeat('a',64))", [runId]),
+    );
+    await db.exec("reset role;set role service_role");
+    await query("select reserve_demo($1,repeat('a',64))", [runId]);
+    await db.exec("reset role");
+    const ids = [
+      "10000000-0000-4000-8000-000000000001",
+      "10000000-0000-4000-8000-000000000002",
+      "10000000-0000-4000-8000-000000000003",
+    ];
+    for (const [i, role] of ["student", "campus", "industry"].entries()) {
+      await query(
+        "insert into auth.users(id,email,raw_app_meta_data) values($1,$2,$3)",
+        [
+          ids[i],
+          role + "-demo+" + runId + "@preview.champus.invalid",
+          JSON.stringify({ champus_demo: { run: runId, role } }),
+        ],
+      );
+    }
+    await db.exec("set role service_role");
+    await query("select seed_demo($1)", [runId]);
+    await query("select seed_demo($1)", [runId]);
+    assert.equal(
+      (await query("select * from demo_members($1)", [runId])).rows.length,
+      3,
+    );
+    for (const id of ids) {
+      await actor(id);
+      assert.equal(
+        (await query("select * from demo_directory()")).rows.length,
+        0,
+      );
+      assert.equal(
+        (
+          await query("select * from program_lessons where institution_id=$1", [
+            "demo-" + runId,
+          ])
+        ).rows.length,
+        9,
+      );
+    }
+    await actor(ids[0]);
+    assert.equal(
+      (await query("select * from curriculum_tasks")).rows.length,
+      1,
+    );
+    assert.equal(
+      (await query("select decision from reviews")).rows[0].decision,
+      "Needs revision",
+    );
+    await actor(ids[1]);
+    assert.equal((await query("select * from industry_needs")).rows.length, 1);
+    await query(
+      "update guidance_requests set feedback='Show the join result',decision='Recommended'",
+    );
+    await actor(ids[0]);
+    assert.equal(
+      (await query("select feedback from guidance_requests")).rows[0].feedback,
+      "Show the join result",
+    );
+    await actor(teacher);
+    assert.equal(
+      (
+        await query("select * from curriculum_tasks where institution_id=$1", [
+          "demo-" + runId,
+        ])
+      ).rows.length,
+      0,
+    );
+    await actor(admin);
+    assert.equal(
+      (await query("select * from demo_directory()")).rows.length,
+      3,
+    );
+    await db.exec("reset role;set role anon");
+    assert.equal(
+      (
+        await query("select * from program_lessons where institution_id=$1", [
+          "demo-" + runId,
+        ])
+      ).rows.length,
+      0,
+    );
   } finally {
     await db.close();
   }
