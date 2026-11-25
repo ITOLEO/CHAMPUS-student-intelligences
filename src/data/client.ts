@@ -6,8 +6,20 @@ const key =
   env.VITE_SUPABASE_PUBLISHABLE_KEY ||
   env.VITE_SUPABASE_ANON_KEY;
 export const configured = Boolean(url || key);
+export const previewMode =
+  typeof window !== "undefined" &&
+  /^\/preview(?:\/|$)/.test(window.location.pathname);
+const previewAuth = {
+  auth: {
+    storageKey: "champus.preview.session",
+    storage: typeof window !== "undefined" ? window.sessionStorage : undefined,
+    detectSessionInUrl: false,
+  },
+};
 export const db =
-  url && key && /^https?:\/\//.test(url) ? createClient(url, key) : null;
+  url && key && /^https?:\/\//.test(url)
+    ? createClient(url, key, previewMode ? previewAuth : undefined)
+    : null;
 export function requireDb() {
   if (!db)
     throw new Error("Account access is unavailable. Please try again later.");

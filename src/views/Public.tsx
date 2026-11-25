@@ -130,8 +130,12 @@ export function Landing() {
             project that fits your goal, then use lecturer feedback to improve.
           </p>
           <div className="hero-buttons">
-            <Link className="btn primary" to="/sign-in">
-              <GraduationCap size={18} /> Sign in to your workspace
+            <Link
+              className="btn primary"
+              to={s.sessionUser ? "/status" : "/sign-in"}
+            >
+              <GraduationCap size={18} />{" "}
+              {s.sessionUser ? "Check status" : "Sign in to your workspace"}
             </Link>
             <Link className="view-all" to="/programs">
               Explore the course guide
@@ -206,12 +210,15 @@ export function Landing() {
           <p className="overline">Account access</p>
           <h2 id="access-title">Start with your campus account.</h2>
           <p>
-            Your administrator assigns your workspace. Students receive a
+            Your CHAMPUS contact arranges your workspace. Students receive a
             program and cohort before they sign in. Your lecturer connects
             practice to the courses you take.
           </p>
-          <Link className="btn primary" to="/sign-in">
-            Sign in with a password
+          <Link
+            className="btn primary"
+            to={s.sessionUser ? "/status" : "/sign-in"}
+          >
+            {s.sessionUser ? "Check status" : "Sign in with a password"}
           </Link>
         </div>
         <div>

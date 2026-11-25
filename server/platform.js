@@ -55,16 +55,14 @@ export function endpoint(action) {
   return async (req, res) => {
     res.setHeader("Cache-Control", "private, no-store");
     try {
-      const data = await action(req);
+      const data = await action(req, res);
       return res.status(200).json(data);
     } catch (error) {
-      return res
-        .status(error.status || 503)
-        .json({
-          error: error.status
-            ? error.message
-            : "The service could not finish this request. Try again.",
-        });
+      return res.status(error.status || 503).json({
+        error: error.status
+          ? error.message
+          : "The service could not finish this request. Try again.",
+      });
     }
   };
 }

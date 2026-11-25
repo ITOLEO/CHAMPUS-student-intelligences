@@ -154,12 +154,12 @@ test("the Features disclosure supports Escape and an invalid route has a recover
   assert.match(body(), /Page not found/);
   assert.ok(doc.querySelector('main a[href="/"]'));
   const button = doc.querySelector<HTMLButtonElement>(
-    'button[aria-label="Features"]',
+    'button[aria-controls="menu-industry"]',
   )!;
   await act(async () => button.click());
   assert.equal(button.getAttribute("aria-expanded"), "true");
   assert.match(
-    doc.getElementById("feature-menu")!.textContent!,
+    doc.getElementById("menu-industry")!.textContent!,
     /Industry needs/,
   );
   await act(async () =>
@@ -218,4 +218,37 @@ test("feedback stays separate from the help menu and hover is the sidebar defaul
     null,
   );
   assert.equal(dom.window.localStorage.getItem("champus.ui.rail"), null);
+});
+
+test("public navigation explains three roles and keeps internal access in the footer", async () => {
+  await go("/");
+  const roleNames = [...doc.querySelectorAll(".role-trigger")].map(
+    (b) => b.textContent,
+  );
+  assert.deepEqual(roleNames, ["Student", "Lecturer", "Industry"]);
+  assert.equal(
+    doc.querySelectorAll(
+      'a[href^="/features/admin"],a[href="/features/managed-access"]',
+    ).length,
+    0,
+  );
+  assert.equal(
+    doc.querySelector('footer a[href="/access-history"]')?.textContent,
+    "Access history",
+  );
+  assert.equal(
+    doc.querySelector('header a[href="/demo"]')?.textContent,
+    "Try demo",
+  );
+  for (const old of [
+    "admin-dashboard",
+    "managed-access",
+    "enrollments",
+    "access-history",
+  ]) {
+    await go("/features/" + old);
+    assert.match(body(), /Feature not found/);
+  }
+  await go("/access-history");
+  assert.equal(dom.window.location.pathname, "/sign-in");
 });

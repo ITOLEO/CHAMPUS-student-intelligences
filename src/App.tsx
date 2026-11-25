@@ -1,3 +1,5 @@
+import { Demo, AccountStatus } from "./views/Access";
+import { previewMode } from "./data/client";
 import { CourseMap } from "./views/CourseMap";
 import { Administration } from "./views/Administration";
 import { Programs } from "./views/Programs";
@@ -108,9 +110,9 @@ function Help() {
       <section className="panel">
         <h2>Access your workspace</h2>
         <p>
-          Your administrator creates your account and assigns a workspace. Sign
-          in with the email and password they give you. Use Forgot password to
-          request a reset.
+          Your CHAMPUS contact provides access to your workspace. Sign in with
+          the email and password they give you. Use Forgot password to request a
+          reset.
         </p>
         {!user && <Link to="/sign-in">Sign in</Link>}
       </section>
@@ -191,7 +193,7 @@ function Pages() {
       ? titles[pathname] + " | CHAMPUS"
       : "CHAMPUS";
   }, [pathname]);
-  const showFooter = !user;
+  const showFooter = !user && pathname !== "/status";
   return (
     <>
       <a
@@ -210,9 +212,14 @@ function Pages() {
       <Header />
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/status" element={<AccountStatus />} />
+        <Route path="/demo" element={<Demo />} />
         <Route path="/welcome" element={<Navigate replace to="/" />} />
         <Route path="/features/:id" element={<FeaturePage />} />
-        <Route path="/sign-in" element={<SignIn />} />
+        <Route
+          path="/sign-in"
+          element={previewMode ? <Navigate replace to="/demo" /> : <SignIn />}
+        />
         <Route element={<WorkspaceFrame />}>
           <Route
             path="/opportunities"
@@ -265,6 +272,14 @@ function Pages() {
           />
           <Route
             path="/admin"
+            element={
+              <RolePage allowed={["admin"]}>
+                <Administration />
+              </RolePage>
+            }
+          />
+          <Route
+            path="/access-history"
             element={
               <RolePage allowed={["admin"]}>
                 <Administration />
@@ -364,7 +379,7 @@ export default function App() {
   const Router =
     window.location.protocol === "file:" ? HashRouter : BrowserRouter;
   return (
-    <Router>
+    <Router basename={previewMode ? "/preview" : undefined}>
       <StoreProvider>
         <Pages />
       </StoreProvider>

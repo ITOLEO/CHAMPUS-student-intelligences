@@ -1,7 +1,7 @@
 import { workspaceNames } from "../data/platform";
 import { ThemeChoices } from "./Appearance";
 import { useAppearance } from "../data/appearance";
-import { requireDb } from "../data/client";
+import { previewMode, requireDb } from "../data/client";
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
@@ -15,7 +15,6 @@ import {
   LogOut,
   Clock3,
   LogIn,
-  Menu,
   MessageSquare,
   Search,
   Settings,
@@ -133,7 +132,13 @@ function LocalClock() {
 
 export function Header() {
   useAppearance();
-  const { user, profile, workspace: kind } = useStore();
+  const {
+    user,
+    sessionUser,
+    authLoading,
+    profile,
+    workspace: kind,
+  } = useStore();
   const job = useBusy();
   const location = useLocation();
   const navigate = useNavigate();
@@ -156,6 +161,25 @@ export function Header() {
   const help = useRef<HTMLButtonElement>(null);
   const searchButton = useRef<HTMLButtonElement>(null);
   const header = useRef<HTMLElement>(null);
+  const [groupId, setGroupId] = useState("student");
+  const statusScreen =
+    location.pathname === "/status" ||
+    (!!sessionUser &&
+      !user &&
+      ![
+        "/",
+        "/demo",
+        "/programs",
+        "/learning",
+        "/opportunities",
+        "/help",
+        "/search",
+      ].some((path) =>
+        path === "/"
+          ? location.pathname === path
+          : location.pathname.startsWith(path),
+      ) &&
+      !location.pathname.startsWith("/features/"));
   const hoverOpened = useRef(false);
   useEffect(() => {
     if (popup !== "features") return;
@@ -168,7 +192,7 @@ export function Header() {
     position();
     window.addEventListener("resize", position);
     return () => window.removeEventListener("resize", position);
-  }, [popup]);
+  }, [popup, groupId]);
 
   useEffect(() => {
     setPopup(null);
@@ -182,6 +206,7 @@ export function Header() {
       if (!header.current?.contains(event.target as Node)) setPopup(null);
     };
     const handleKey = (event: KeyboardEvent) => {
+      if (statusScreen || authLoading) return;
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
         event.preventDefault();
         if (popup === "search") search.current?.focus();
@@ -205,11 +230,19 @@ export function Header() {
       window.removeEventListener("pointerdown", clickOutside);
       window.removeEventListener("keydown", handleKey);
     };
-  }, [popup]);
+  }, [popup, statusScreen, authLoading]);
 
   const toggle = (next: Popup) =>
     setPopup((current) => (current === next ? null : next));
   const isFeaturesOpen = popup === "features";
+  if (statusScreen || authLoading)
+    return (
+      <header className="global public-header">
+        <div className="bar">
+          <Brand compact />
+        </div>
+      </header>
+    );
   return (
     <header
       ref={header}
@@ -219,88 +252,94 @@ export function Header() {
         <Brand compact to={user ? "/overview" : "/"} />
         {!workspace && (
           <nav aria-label="Main navigation" className="marketing-nav">
-            <div
-              className="feature-disclosure"
-              onPointerEnter={(event) => {
-                if (event.pointerType === "mouse" && popup !== "features") {
-                  hoverOpened.current = true;
-                  setPopup("features");
-                }
-              }}
-              onPointerLeave={(event) => {
-                hoverOpened.current = false;
-                if (
-                  event.pointerType === "mouse" &&
-                  !event.currentTarget.contains(document.activeElement)
-                ) {
-                  setPopup((current) =>
-                    current === "features" ? null : current,
-                  );
-                }
-              }}
-              onBlur={(event) => {
-                if (!event.currentTarget.contains(event.relatedTarget))
-                  setPopup((current) =>
-                    current === "features" ? null : current,
-                  );
-              }}
-            >
-              <button
-                ref={features}
-                type="button"
-                className="nav-text features-trigger"
-                aria-expanded={isFeaturesOpen}
-                aria-controls="feature-menu"
-                aria-label="Features"
-                onClick={(event) => {
-                  if (hoverOpened.current && event.detail) {
-                    hoverOpened.current = false;
-                    setPopup("features");
-                    return;
-                  }
-                  toggle("features");
-                }}
-              >
-                <Menu size={19} className="features-mobile-icon" />
-                <span>Features</span>
-                <ChevronDown size={14} />
-              </button>
-              <div
-                className="features-flyout"
-                id="feature-menu"
-                hidden={!isFeaturesOpen}
-              >
-                <div className="features-inner">
-                  <div className="mobile-destinations">
-                    <Link to="/opportunities">Opportunities</Link>
-                    <Link to="/learning">Learning library</Link>
-                  </div>
-                  {featureGroups.map((group) => (
-                    <section className="feature-column" key={group.title}>
-                      <h2>{group.title}</h2>
-                      {group.features.map((item) => {
-                        const Icon = item.icon;
-                        return (
-                          <Link
-                            key={item.id}
-                            className="feature-menu-link"
-                            to={featurePath(item.id)}
-                          >
-                            <span className="feature-icon">
-                              <Icon size={19} />
-                            </span>
-                            <span>
-                              <strong>{item.title}</strong>
-                              <small>{item.description}</small>
-                            </span>
-                          </Link>
-                        );
-                      })}
-                    </section>
-                  ))}
+            {featureGroups.map((group) => {
+              const title =
+                group.id === "campus"
+                  ? "Lecturer"
+                  : group.id === "industry"
+                    ? "Industry"
+                    : "Student";
+              const open = isFeaturesOpen && groupId === group.id;
+              function show(button: HTMLButtonElement) {
+                features.current = button;
+                setGroupId(group.id);
+                setPopup("features");
+              }
+              return (
+                <div
+                  className="feature-disclosure"
+                  key={group.id}
+                  onPointerLeave={(e) => {
+                    if (
+                      e.pointerType === "mouse" &&
+                      !e.currentTarget.contains(document.activeElement)
+                    )
+                      setPopup((current) =>
+                        current === "features" ? null : current,
+                      );
+                  }}
+                  onBlur={(e) => {
+                    if (!e.currentTarget.contains(e.relatedTarget))
+                      setPopup((current) =>
+                        current === "features" ? null : current,
+                      );
+                  }}
+                >
+                  <button
+                    type="button"
+                    className="nav-text role-trigger"
+                    aria-expanded={open}
+                    aria-controls={"menu-" + group.id}
+                    onPointerEnter={(e) => {
+                      if (e.pointerType === "mouse") {
+                        hoverOpened.current = true;
+                        show(e.currentTarget);
+                      }
+                    }}
+                    onClick={(e) => {
+                      if (open && !(hoverOpened.current && e.detail))
+                        setPopup(null);
+                      else show(e.currentTarget);
+                      hoverOpened.current = false;
+                    }}
+                  >
+                    {title}
+                    <ChevronDown size={13} />
+                  </button>
+                  {open && (
+                    <div
+                      className="features-flyout role-flyout"
+                      id={"menu-" + group.id}
+                    >
+                      <div className="features-inner role-menu">
+                        {group.features.map((item) => {
+                          const Icon = item.icon;
+                          return (
+                            <Link
+                              className="feature-menu-link"
+                              key={item.id}
+                              to={featurePath(item.id)}
+                            >
+                              <span className="feature-icon">
+                                <Icon size={18} />
+                              </span>
+                              <span>
+                                <strong>{item.title}</strong>
+                                <small>{item.description}</small>
+                              </span>
+                            </Link>
+                          );
+                        })}
+                        <div className="mobile-destinations">
+                          <Link to="/opportunities">Opportunities</Link>
+                          <Link to="/learning">Learning library</Link>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>
-            </div>
+              );
+            })}
             <Link className="nav-text marketing-link" to="/opportunities">
               Opportunities
             </Link>
@@ -316,6 +355,7 @@ export function Header() {
             </span>
             <RoleIcon size={17} aria-hidden="true" />
             <span>{role} workspace</span>
+            {previewMode && <Link to="/demo">Demo</Link>}
           </span>
         )}
         <div className="nav-actions">
@@ -404,6 +444,11 @@ export function Header() {
                     <Link to="/profile" onClick={() => setPopup(null)}>
                       <UserRound size={17} /> My profile
                     </Link>
+                    <Link to="/demo">
+                      <LayoutDashboard size={17} />
+                      Try demo
+                    </Link>
+                    {previewMode && <a href="/">Exit demo</a>}
                     <Link to="/settings" onClick={() => setPopup(null)}>
                       <Settings size={17} /> Settings
                     </Link>
@@ -439,10 +484,21 @@ export function Header() {
               )}
             </>
           ) : (
-            <Link className="btn primary nav-login" to="/sign-in">
-              <LogIn size={16} />
-              <span>Sign in</span>
-            </Link>
+            <>
+              {" "}
+              {!sessionUser && (
+                <Link className="demo-entry" to="/demo">
+                  Try demo
+                </Link>
+              )}
+              <Link
+                className="btn primary nav-login"
+                to={sessionUser ? "/status" : "/sign-in"}
+              >
+                <LogIn size={16} />
+                <span>{sessionUser ? "Check status" : "Sign in"}</span>
+              </Link>
+            </>
           )}
           {popup === "help" && (
             <div className="header-popup" id="header-help">

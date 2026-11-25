@@ -19,7 +19,7 @@ Use Node.js 22.12 or later. Run `npm ci`, `npm test` and `npm run build` at the 
 
 ## Activate the managed workspaces
 
-1. Apply the SQL migrations in filename order to the Supabase project for CHAMPUS. An installation with the three earlier migrations needs only the [managed platform migration](supabase/migrations/202611260001_managed_platform.sql). It changes the new-user trigger on Supabase Auth. Use a dedicated CHAMPUS Auth project, since this trigger governs account creation in that project.
+1. Apply the SQL migrations in filename order to the Supabase project for CHAMPUS. An installation with the three earlier migrations needs the [managed platform migration](supabase/migrations/202611260001_managed_platform.sql) followed by the [demo migration](supabase/migrations/202611260002_demo_workspaces.sql). The managed platform migration changes the new-user trigger on Supabase Auth. Use a dedicated CHAMPUS Auth project, since this trigger governs account creation in that project.
 2. In Supabase Authentication, enable the Email provider and turn off **Allow new users to sign up**. Set the Site URL to the production origin. Allow the exact site’s `/sign-in**` recovery destination. Configure email delivery for password recovery. [Auth configuration](https://supabase.com/docs/guides/auth/general-configuration) · [Redirect URLs](https://supabase.com/docs/guides/auth/redirect-urls)
 3. In Vercel, set the variables below for the intended environment. Redeploy after changing them. Keep server secrets out of all `VITE_*` variables and source files.
 4. Assign the first trusted administrator using one method below. Sign in to the Admin workspace. Create each account with its email, name, initial password and role. Select the program and cohort for students. Deliver the credentials through the institution’s private channel.
@@ -68,3 +68,11 @@ The migration preserves existing records. It maps assigned teaching, review, cur
 The public guide includes Business Technology & AI Innovation, Culinary Arts, Hotel Management and Event Management, with cohort values 1 through 4. The nine BIZAI briefs contain practical outcomes, indicators, artifacts, sources and two career examples. They are CHAMPUS materials. Lecturers can add sourced practice for the other programs. The institution owns its official syllabi, credit rules and assessments.
 
 Read the [research and NEXORA design decisions](docs/PLATFORM-RESEARCH.md), the [academic design record](docs/AGILE-CURRICULUM.md) and the [opportunity sources](docs/CATALOG-SOURCES.md). The earlier specification and handoff describe project history. This access and deployment guide applies to the four-workspace release.
+
+## Passwordless workspace previews
+
+Apply the [fifth migration](supabase/migrations/202611260002_demo_workspaces.sql) once after the four earlier migrations. The existing Vercel server secret provisions the three preview users through Supabase Auth on first use. A signed browser cookie reconnects the three roles to the same sample campus for seven days. The preview uses separate session storage so switching roles preserves the visitor's normal account session.
+
+Select **Try demo** next to sign-in or in the profile. Choose Student, Campus or Industry. Open the Database task as the student and read the sample revision. Switch to Campus through the account menu to review the guidance proposal. Return to Student to see the feedback. Industry and Campus share the same studio brief. All sample accounts and activities are stored in Supabase. Internal staff can inspect the accounts and preview IDs in **Demo accounts**. The understated **Access history** link in the public footer checks internal account access. The public preview offers the three learning roles.
+
+The preview creates synthetic addresses of the form `student-demo+<preview-id>@preview.champus.invalid`. The server checks role ownership and exchanges a single-use Supabase sign-in link. No shared password or email inbox is required.

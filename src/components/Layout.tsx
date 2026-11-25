@@ -60,6 +60,7 @@ export function Footer() {
         <span>From learning to opportunity.</span>
         <Link to="/opportunities">Opportunities</Link>
         <Link to="/learning">Learning library</Link>
+        <Link to="/access-history">Access history</Link>
       </div>
     </footer>
   );
@@ -119,42 +120,12 @@ export function Guard({ children }: { children: ReactNode }) {
     return (
       <Navigate
         replace
-        to={"/sign-in?next=" + encodeURIComponent(loc.pathname + loc.search)}
+        to={
+          s.sessionUser
+            ? "/status"
+            : "/sign-in?next=" + encodeURIComponent(loc.pathname + loc.search)
+        }
       />
-    );
-  if (s.accountError)
-    return (
-      <main id="main" className="wrap section">
-        <Empty
-          title="Workspace unavailable"
-          text={s.accountError}
-          action={
-            <button className="btn" onClick={s.refresh}>
-              Try again
-            </button>
-          }
-        />
-      </main>
-    );
-  if (s.accountLoading)
-    return (
-      <main id="main" className="wrap section">
-        <Notice>Loading your workspace…</Notice>
-      </main>
-    );
-  if (!s.workspace || !s.enabled)
-    return (
-      <main id="main" className="wrap section">
-        <Empty
-          title="Account needs administrator access"
-          text="Ask your campus administrator to activate your account and assign the correct workspace. If you already have access, ask them to check the managed-account database setup."
-          action={
-            <button className="btn secondary" onClick={s.refresh}>
-              Check access again
-            </button>
-          }
-        />
-      </main>
     );
   return <>{children}</>;
 }

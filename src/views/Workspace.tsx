@@ -83,6 +83,9 @@ export function Profile() {
       <p className="overline">Account</p>
       <h1 className="page-title">My profile</h1>
       <p className="lede">Manage the details shown in your CHAMPUS account.</p>
+      <Link className="btn secondary" to="/demo">
+        Try demo
+      </Link>
       <ProfilePhoto />
       {student && <Preference />}
       <form

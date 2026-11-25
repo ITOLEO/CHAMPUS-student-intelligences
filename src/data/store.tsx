@@ -69,6 +69,7 @@ function useBuildStore() {
   const [personal, setPersonal] = useState<{
       owner: string;
       value: Personal;
+      checkedAt: number;
     } | null>(null),
     [accountError, setAccountError] = useState(""),
     [revision, setRevision] = useState(0);
@@ -172,7 +173,7 @@ function useBuildStore() {
         roles: (check(a) || []).map((v) => v.role),
         institution: profile.institution_id || "",
       };
-      if (active) setPersonal({ owner: uid, value });
+      if (active) setPersonal({ owner: uid, value, checkedAt: Date.now() });
     })().catch(() => {
       if (active) {
         setAccountError(
@@ -200,15 +201,18 @@ function useBuildStore() {
     refresh();
   }
   return {
-    user,
-    authLoading,
+    sessionUser: user,
+    user: current.enabled && current.workspace ? user : null,
+    authLoading:
+      authLoading || (!!user && !accountError && personal?.owner !== user.id),
     skills,
     mappings,
     institutions,
     listings,
     catalogError,
     catalogLoading,
-    ...current,
+    ...(current.enabled && current.workspace ? current : blank),
+    checkedAt: personal?.owner === user?.id ? personal?.checkedAt : undefined,
     accountLoading: !!user && !accountError && personal?.owner !== user.id,
     accountError,
     refresh,

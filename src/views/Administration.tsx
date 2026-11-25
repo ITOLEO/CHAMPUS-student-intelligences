@@ -50,6 +50,56 @@ function Placement({
     </div>
   );
 }
+function DemoDirectory() {
+  const [offset, setOffset] = useState(0);
+  const records = useRecords(
+    async () =>
+      readRows(
+        await requireDb().rpc("demo_directory", { page_offset: offset }),
+      ) as {
+        name: string;
+        email: string;
+        workspace: string;
+        preview_id: string;
+      }[],
+    [offset],
+  );
+  return (
+    <section className="panel">
+      <h2>Demo accounts</h2>
+      <p>Accounts with the same preview ID share a sample project.</p>
+      {records.error && (
+        <Notice>
+          {records.error} <button onClick={records.reload}>Retry</button>
+        </Notice>
+      )}
+      {records.data?.length === 0 && <p>No preview accounts on this page.</p>}
+      {records.data?.map((a) => (
+        <article className="curr-row" key={a.email}>
+          <strong>{a.name}</strong>
+          <span>{a.email}</span>
+          <small>
+            Preview {a.preview_id.slice(0, 8)} · {a.workspace}
+          </small>
+        </article>
+      ))}
+      <div className="buttons">
+        <button type="button" onClick={records.reload}>
+          Refresh
+        </button>
+        <button disabled={!offset} onClick={() => setOffset(offset - 30)}>
+          Previous
+        </button>
+        <button
+          disabled={records.data?.length !== 30}
+          onClick={() => setOffset(offset + 30)}
+        >
+          Next
+        </button>
+      </div>
+    </section>
+  );
+}
 export function Administration() {
   const s = useStore(),
     job = useBusy(),
@@ -297,6 +347,7 @@ export function Administration() {
             </article>
           ))}
       </section>
+      <DemoDirectory />
       <section className="panel">
         <h2>Access history</h2>
         {records.data?.events.length === 0 && (

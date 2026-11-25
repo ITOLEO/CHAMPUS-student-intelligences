@@ -21,7 +21,7 @@ const modes = {
 };
 
 export function SignIn() {
-  const { user, authLoading } = useStore();
+  const { sessionUser: user, user: active, authLoading } = useStore();
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const next = safeReturn(params.get("next"));
@@ -33,7 +33,14 @@ export function SignIn() {
   const [sent, setSent] = useState(false);
   const job = useBusy();
 
-  if (user && !recovery) return <Navigate to={next} replace />;
+  if (user && !recovery)
+    return authLoading ? (
+      <main className="wrap section" id="main">
+        <Notice>Checking your workspace…</Notice>
+      </main>
+    ) : (
+      <Navigate to={active ? next : "/status"} replace />
+    );
   const settingPassword = !!user && recovery;
   const title = settingPassword
     ? "Set a new password"
@@ -93,7 +100,7 @@ export function SignIn() {
               ? user.email
               : sent
                 ? "Check the inbox for the address you entered."
-                : "Your campus administrator creates your account. Use the email and password they gave you."}
+                : "Your CHAMPUS contact provides your account. Use the email and password they gave you."}
           </p>
         </div>
         <div className="auth-action">
